@@ -6,10 +6,10 @@ const screenToday = document.getElementById("screen-today");
 
 // Find the most recent earlier workout where this exercise was actually done
 function lastSession(name, beforeDate) {
-  const dates = Object.keys(data.workouts).filter(d => d < beforeDate).sort().reverse();
-  for (const date of dates) {
-    const ex = data.workouts[date].exercises.find(e => e.name === name && e.sets.some(s => s.done));
-    if (ex) return { date: date, sets: ex.sets };
+  const list = allWorkouts().filter(w => w.date < beforeDate).reverse();
+  for (const w of list) {
+    const ex = w.exercises.find(e => e.name === name && e.sets.some(s => s.done));
+    if (ex) return { date: w.date, sets: ex.sets };
   }
   return null;
 }
@@ -61,8 +61,7 @@ function repsOutOfRange(name, value) {
 // ---------- Drawing the screen ----------
 
 function didTrain(key) {
-  const w = data.workouts[key];
-  const lifted = w && w.exercises.some(ex => ex.sets.some(s => s.done));
+  const lifted = allWorkouts().some(w => w.date === key && w.exercises.some(ex => ex.sets.some(s => s.done)));
   return lifted || data.cardio.some(c => c.date === key);
 }
 

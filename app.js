@@ -1,18 +1,37 @@
-// app.js — switches between the three screens using the bottom tab bar
+// app.js — switches between the screens and handles the bottom tab bar
 
-const screens = { today: screenToday, cardio: screenCardio, history: screenHistory };
-const renderers = { today: renderToday, cardio: renderCardio, history: renderHistory };
+const screens = {
+  today: screenToday, workouts: screenWorkouts, workout: screenWorkout, picker: screenPicker,
+  exercise: screenExercise, cardio: screenCardio, history: screenHistory,
+};
+const renderers = {
+  today: renderToday, workouts: renderWorkouts, workout: renderWorkout, picker: renderPicker,
+  exercise: renderExercise, cardio: renderCardio, history: renderHistory,
+};
 
 function showScreen(name) {
+  clearInterval(elapsedId); // the workout clock only runs while its screen is open
   for (const key in screens) screens[key].hidden = key !== name;
-  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.screen === name));
+  document.querySelectorAll("nav button[data-screen]").forEach(b => b.classList.toggle("active", b.dataset.screen === name));
+  document.body.classList.toggle("in-exercise", name === "exercise");
   renderers[name](); // redraw so the screen always shows fresh data
   window.scrollTo(0, 0);
 }
 
+// A short message at the bottom of the screen
+function toast(text) {
+  const box = document.getElementById("toast");
+  box.textContent = text;
+  box.hidden = false;
+  clearTimeout(toast.id);
+  toast.id = setTimeout(() => { box.hidden = true; }, 2200);
+}
+
 document.querySelector("nav").addEventListener("click", e => {
   const btn = e.target.closest("button");
-  if (btn) showScreen(btn.dataset.screen);
+  if (!btn) return;
+  if (btn.id === "new-workout") startWorkout(); // the big "+"
+  else showScreen(btn.dataset.screen);
 });
 
 showScreen("today");

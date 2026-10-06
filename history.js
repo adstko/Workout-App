@@ -2,15 +2,14 @@
 
 const screenHistory = document.getElementById("screen-history");
 
-// Only count workouts where at least one set was finished
-function loggedDates() {
-  return Object.keys(data.workouts).sort().filter(d =>
-    data.workouts[d].exercises.some(ex => ex.sets.some(s => s.done)));
+// Only count workouts where at least one set was finished (old and new flow together)
+function loggedWorkouts() {
+  return allWorkouts().filter(w => w.exercises.some(ex => ex.sets.some(s => s.done)));
 }
 
 function renderHistory() {
-  const dates = loggedDates();
-  const names = [...new Set(dates.flatMap(d => data.workouts[d].exercises
+  const logged = loggedWorkouts();
+  const names = [...new Set(logged.flatMap(w => w.exercises
     .filter(ex => ex.sets.some(s => s.done)).map(ex => ex.name)))].sort();
 
   let html = `<h1>History</h1><h2>Weight over time</h2>`;
@@ -22,18 +21,18 @@ function renderHistory() {
   }
 
   html += `<h2>Past workouts</h2>`;
-  dates.slice().reverse().forEach(date => {
-    const w = data.workouts[date];
-    html += `<details><summary>${prettyDate(date)} · ${w.day}</summary>`;
+  logged.slice().reverse().forEach(w => {
+    const length = w.minutes ? " · " + w.minutes + " min" : "";
+    html += `<details><summary>${prettyDate(w.date)} · ${esc(w.name)}${length}</summary>`;
     w.exercises.forEach(ex => {
       const done = ex.sets.filter(s => s.done);
       if (done.length === 0) return;
-      const text = done.map(s => TIMED.includes(ex.name) ? s.reps + "s" : (s.weight ? s.weight + "lb" : "BW") + "×" + s.reps).join(" · ");
+      const text = done.map(s => TIMED.includes(ex.name) ? s.reps + "s" : (s.weight ? s.weight + "lb" : "BW") + "×" + s.reps + (s.failure ? " (failure)" : "")).join(" · ");
       html += `<div><b>${esc(ex.name)}</b><br>${text}</div>`;
     });
     html += `</details>`;
   });
-  if (dates.length === 0) html += `<p class="muted">No workouts yet.</p>`;
+  if (logged.length === 0) html += `<p class="muted">No workouts yet.</p>`;
 
   html += `<h2>Backup</h2>
     <button class="big primary" id="export-btn">Export my data</button>
@@ -46,11 +45,11 @@ function renderHistory() {
 // Line chart of the heaviest completed set from each session
 function drawChart(name) {
   const points = [];
-  loggedDates().forEach(date => {
-    const ex = data.workouts[date].exercises.find(e => e.name === name);
+  loggedWorkouts().forEach(w => {
+    const ex = w.exercises.find(e => e.name === name);
     if (!ex) return;
     const weights = ex.sets.filter(s => s.done).map(s => Number(s.weight) || 0);
-    if (weights.length) points.push({ date: date, weight: Math.max(...weights) });
+    if (weights.length) points.push({ date: w.date, weight: Math.max(...weights) });
   });
 
   const box = document.getElementById("chart");

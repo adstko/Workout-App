@@ -36,7 +36,7 @@ const PLAN = {
 };
 
 // Exercises logged in seconds instead of reps (no rep-range warning, no progress tip)
-const TIMED = ["Plank"];
+const TIMED = ["Plank", "Side plank"];
 
 // Which day to show by default. getDay(): Sunday = 0 ... Saturday = 6
 const DEFAULT_DAYS = ["Legs", "Push", "Pull", "Legs", "Cardio", "Push", "Pull"];
