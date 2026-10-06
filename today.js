@@ -78,7 +78,7 @@ function renderWeek() {
     const key = dateKey(date);
     const preset = presetForDay(date.getDay());
     html += `<button class="weekday ${didTrain(key) ? "trained" : ""} ${key === todayKey() ? "today" : ""} ${key === viewDate() ? "selected" : ""}" data-daykey="${key}">
-      ${WEEK[i][0]}<b>${didTrain(key) ? "✓" : "·"}</b><small>${preset ? esc(preset.name) : "Rest"}</small></button>`;
+      ${WEEK[i][0]}<b>${date.getDate()}${didTrain(key) ? '<span class="ck">✓</span>' : ""}</b><small>${preset ? esc(preset.name) : "Rest"}</small></button>`;
   }
   document.getElementById("week").innerHTML = html;
 }

@@ -221,3 +221,5 @@ button.weekday { min-height: 0; min-width: 0; padding: 6px 0 5px; font: inherit;
 #dialog-input { margin-bottom: 14px; }
 #dialog .row button { min-height: 54px; }
 #dialog button.danger { background: var(--red); color: #2a0707; border: none; font-weight: 700; }
+.weekday .ck { font-size: 13px; margin-left: 1px; }
+.weekday.trained b { color: var(--green); }
