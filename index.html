@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f1115">
+  <title>Workout Tracker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Each tab is one "screen". Only one is visible at a time. -->
+  <main>
+    <section id="screen-today" class="screen"></section>
+    <section id="screen-cardio" class="screen" hidden></section>
+    <section id="screen-history" class="screen" hidden></section>
+  </main>
+
+  <!-- Rest timer bar: sits above the tab bar, hidden until a set is finished -->
+  <div id="timer" hidden>
+    <span id="timer-text">Rest 1:30</span>
+    <button id="timer-add" type="button">+15s</button>
+    <button id="timer-stop" type="button">Skip</button>
+  </div>
+
+  <nav>
+    <button data-screen="today" class="active">Today</button>
+    <button data-screen="cardio">Cardio</button>
+    <button data-screen="history">History</button>
+  </nav>
+
+  <script src="plan.js"></script>
+  <script src="storage.js"></script>
+  <script src="timer.js"></script>
+  <script src="today.js"></script>
+  <script src="cardio.js"></script>
+  <script src="history.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
