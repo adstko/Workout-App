@@ -24,6 +24,7 @@ const EXERCISES = [
   ["Lat pulldown", "Back", "Cable"],
   ["Straight-arm pulldown", "Back", "Cable"],
   ["Cable row", "Back", "Cable"],
+  ["Seated cable row", "Back", "Cable"],
   ["Barbell row", "Back", "Barbell"],
   ["T-bar row", "Back", "Barbell"],
   ["Dumbbell row", "Back", "Dumbbell"],

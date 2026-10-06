@@ -192,3 +192,16 @@ button.danger { color: var(--red); }
 .failbtn { padding: 0; font-size: 12px; font-weight: 800; letter-spacing: .5px; color: var(--muted); }
 .failbtn.on { background: var(--red); color: #2a0707; border: none; }
 .head button.dots { min-width: 52px; flex: none; }
+
+/* ---------- Presets ---------- */
+.tag.day { background: #2a2f3a; color: var(--text); margin-left: 4px; vertical-align: middle; }
+.phead { display: flex; align-items: center; gap: 10px; }
+.phead > div { flex: 1; }
+.phead button { min-height: 44px; }
+.handle { font-size: 30px; line-height: 1; padding: 10px 8px; color: var(--muted); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.pcard.dragging { position: relative; z-index: 5; border-color: var(--blue); box-shadow: 0 8px 24px rgba(0,0,0,.6); opacity: .92; }
+.pcard.drop-target { border-color: var(--green); border-style: dashed; }
+.reps-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.reps-row input { text-align: center; font-size: 20px; padding: 0 4px; }
+.pcard > button.on { background: var(--blue); color: #06182e; font-weight: 700; border: none; }
+.card .row button { font-size: 15px; padding: 0 4px; }

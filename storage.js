@@ -6,7 +6,9 @@
 //   restSeconds: 90,
 //   sessions: [ { id, date, name, startedAt, minutes, exercises: [ { name, muscle, sets: [ {weight, reps, done, failure} ] } ] } ],
 //   active: null or { name, startedAt, exercises: [...] },
-//   templates: [ { id, name, exercises: [ { name, muscle, equipment, sets, superset } ] } ],
+//   templates: [ { id, name, days: [1, 5], exercises: [ { name, muscle, equipment, sets, minReps, maxReps, superset } ] } ],
+//              ^ these are your "presets". Old templates without days/minReps/maxReps still work.
+//   presetsSeeded: true once the starter presets have been offered (so deleting them keeps them deleted)
 //   customExercises: [ { name, muscle, equipment } ], customRest: 30
 // }
 
@@ -19,7 +21,8 @@ function loadData() {
     workouts: {}, cardio: [], restSeconds: 90,
     sessions: [],          // finished workouts from the "+" flow
     active: null,          // the workout in progress (so closing the tab loses nothing)
-    templates: [],         // saved templates
+    templates: [],         // saved presets
+    presetsSeeded: false,  // starter presets are added only once
     customExercises: [],   // exercises you added yourself
     customRest: 30,        // rest timer (seconds) for the "+" flow
   };

@@ -31,7 +31,8 @@ function renderExercise() {
     </div>
 
     <div class="head">
-      <div><h1>${esc(ex.name)}</h1><p class="muted">${esc(ex.muscle)} · ${esc(ex.equipment)}</p></div>
+      <div><h1>${esc(ex.name)}</h1><p class="muted">${esc(ex.muscle)} · ${esc(ex.equipment)}</p>
+        ${ex.minReps ? `<p class="muted">Target: ${ex.sets.length} sets × ${repText(ex)} reps</p>` : ""}</div>
       <button class="dots" id="ex-menu" aria-label="More">⋮</button>
     </div>`;
 
@@ -106,6 +107,8 @@ screenExercise.addEventListener("click", e => {
         const fresh = makeExercise(items[0]);
         fresh.superset = ex.superset;
         fresh.note = ex.note;
+        fresh.minReps = ex.minReps; // a swap keeps the target rep range
+        fresh.maxReps = ex.maxReps;
         a.exercises[currentEx] = fresh;
         saveData();
         showScreen("exercise");

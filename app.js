@@ -34,4 +34,5 @@ document.querySelector("nav").addEventListener("click", e => {
   else showScreen(btn.dataset.screen);
 });
 
+seedPresets(); // add the starter presets on first launch
 showScreen("today");

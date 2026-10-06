@@ -132,12 +132,27 @@ function exerciseHtml(w, i, date) {
   return html + `</div>`;
 }
 
+// Today's preset(s): presets whose day tag matches today's weekday
+function todaysPresetsHtml() {
+  const today = new Date().getDay();
+  const list = data.templates.filter(p => (p.days || []).includes(today));
+  if (list.length === 0) {
+    return `<div class="card"><div class="muted">Today's preset</div>
+      <p class="muted">None tagged for today. Tag a preset with a day in the Workouts tab.</p></div>`;
+  }
+  return list.map(p => `<div class="card">
+      <div class="muted">Today's preset</div>
+      <h3>${esc(p.name)}</h3>
+      <p class="muted">${p.exercises.length} exercises · ${esc(presetMuscles(p).join(", "))}</p>
+      <button class="big primary" data-preset-start="${p.id}">Start</button></div>`).join("");
+}
+
 function renderToday() {
   const date = todayKey();
   const w = getWorkout(date);
   const label = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
-  let html = `<h1>${w.day} Day</h1><p class="muted">${label}</p><div id="week"></div>`;
+  let html = `<h1>${w.day} Day</h1><p class="muted">${label}</p>${todaysPresetsHtml()}<div id="week"></div>`;
 
   html += `<div class="row days">` + ["Push", "Pull", "Legs", "Cardio", "Rest"]
     .map(d => `<button data-day="${d}" class="${d === w.day ? "on" : ""}">${d}</button>`).join("") + `</div>`;
@@ -159,6 +174,9 @@ function renderToday() {
 // ---------- Handling taps and typing ----------
 
 screenToday.addEventListener("click", e => {
+  const presetBtn = e.target.closest("[data-preset-start]");
+  if (presetBtn) return startPreset(presetBtn.dataset.presetStart);
+
   const w = getWorkout(todayKey());
 
   const dayBtn = e.target.closest("[data-day]");

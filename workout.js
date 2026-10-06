@@ -16,7 +16,9 @@ function makeExercise(item, setCount) {
     const src = done[Math.min(i, done.length - 1)];
     sets.push({ weight: src ? src.weight : "", reps: src ? src.reps : "", done: false, failure: false });
   }
-  return { name: item.name, muscle: item.muscle, equipment: item.equipment, note: "", superset: item.superset || null, sets: sets };
+  return { name: item.name, muscle: item.muscle, equipment: item.equipment, note: "", superset: item.superset || null,
+           minReps: item.minReps || null, maxReps: item.maxReps || null, // the preset's target rep range
+           sets: sets };
 }
 
 // The big "+" button: start a new workout, or go back to the one in progress
@@ -47,13 +49,13 @@ function renderWorkout() {
       <b>${esc(ex.name)}</b>
       ${ex.superset ? '<span class="tag ss">SUPER SET</span>' : ""}
       ${doneCount ? `<span class="tag ok">${doneCount}/${ex.sets.length} ✓</span>` : ""}
-      <span class="muted">${ex.sets.length} ${ex.sets.length === 1 ? "set" : "sets"}, ${esc(ex.muscle)}</span>
+      <span class="muted">${ex.sets.length} ${ex.sets.length === 1 ? "set" : "sets"}, ${esc(ex.muscle)}${ex.minReps ? " · " + repText(ex) + " reps" : ""}</span>
     </button>`;
   });
 
   html += `<div class="stack" style="margin-top:14px">
       <button class="big" id="w-select">Select exercise</button>
-      ${a.exercises.length ? '<button class="big" id="w-template">Save as template</button>' : ""}
+      ${a.exercises.length ? '<button class="big" id="w-template">Save as preset</button>' : ""}
       <button class="big danger" id="w-discard">Discard workout</button>
     </div>`;
 
@@ -77,32 +79,48 @@ function finishWorkout() {
     }
     return;
   }
+  const sessionId = uid();
   data.sessions.push({
-    id: uid(),
+    id: sessionId,
     date: dateKey(new Date(a.startedAt)),
     name: a.name.trim() || "Workout",
     startedAt: a.startedAt,
     minutes: Math.max(1, Math.round((Date.now() - a.startedAt) / 60000)),
     exercises: finished,
   });
+  // Did you change the preset's workout (added, removed, swapped exercises, or changed sets)?
+  const preset = a.presetId && data.templates.find(t => t.id === a.presetId);
+  const changed = preset && presetChanged(preset, a.exercises);
+
   data.active = null;
   saveData();
   stopTimer();
+  openWorkoutId = sessionId; // History opens this workout, with a "Save as preset" button
   toast("Workout saved 💪");
   showScreen("history");
+
+  if (changed && confirm('You changed this workout. Update the "' + preset.name + '" preset with your changes?\n\nOK = update the preset\nCancel = leave the preset as it was')) {
+    preset.exercises = a.exercises.map(ex => ({ name: ex.name, muscle: ex.muscle, equipment: ex.equipment, sets: ex.sets.length,
+      minReps: ex.minReps, maxReps: ex.maxReps, superset: ex.superset }));
+    saveData();
+    toast('Preset "' + preset.name + '" updated');
+  }
 }
 
-function saveAsTemplate() {
+// Compare the workout you did with the preset it started from
+function presetChanged(preset, exercises) {
+  const fromPreset = preset.exercises.map(e => e.name + ":" + e.sets + ":" + !!e.superset).join("|");
+  const fromWorkout = exercises.map(e => e.name + ":" + e.sets.length + ":" + !!e.superset).join("|");
+  return fromPreset !== fromWorkout;
+}
+
+function saveAsPreset() {
   const a = data.active;
-  const name = prompt("Template name (for example: Push Day)", a.name === "Workout" ? "" : a.name);
+  const name = prompt("Preset name (for example: Push Day)", a.name === "Workout" ? "" : a.name);
   if (!name || !name.trim()) return;
-  data.templates.push({
-    id: uid(),
-    name: name.trim(),
-    exercises: a.exercises.map(ex => ({ name: ex.name, muscle: ex.muscle, equipment: ex.equipment, sets: ex.sets.length, superset: ex.superset })),
-  });
-  saveData();
-  toast("Template saved. Find it in Workouts.");
+  newPreset(name.trim(), a.exercises.map(ex => ({ name: ex.name, muscle: ex.muscle, equipment: ex.equipment,
+    sets: ex.sets.length, minReps: ex.minReps, maxReps: ex.maxReps, superset: ex.superset })));
+  toast("Preset saved. Find it in Workouts.");
 }
 
 screenWorkout.addEventListener("click", e => {
@@ -112,7 +130,7 @@ screenWorkout.addEventListener("click", e => {
 
   const id = e.target.id;
   if (id === "w-finish") finishWorkout();
-  else if (id === "w-template") saveAsTemplate();
+  else if (id === "w-template") saveAsPreset();
   else if (id === "w-discard") {
     if (confirm("Discard this workout? Everything you logged in it will be lost.")) {
       data.active = null;

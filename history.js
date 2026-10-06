@@ -1,6 +1,7 @@
 // history.js — History screen: weight chart, past workouts, export
 
 const screenHistory = document.getElementById("screen-history");
+let openWorkoutId = null; // a workout to show expanded (set when you finish one)
 
 // Only count workouts where at least one set was finished (old and new flow together)
 function loggedWorkouts() {
@@ -23,15 +24,16 @@ function renderHistory() {
   html += `<h2>Past workouts</h2>`;
   logged.slice().reverse().forEach(w => {
     const length = w.minutes ? " · " + w.minutes + " min" : "";
-    html += `<details><summary>${prettyDate(w.date)} · ${esc(w.name)}${length}</summary>`;
+    html += `<details ${w.id === openWorkoutId ? "open" : ""}><summary>${prettyDate(w.date)} · ${esc(w.name)}${length}</summary>`;
     w.exercises.forEach(ex => {
       const done = ex.sets.filter(s => s.done);
       if (done.length === 0) return;
       const text = done.map(s => TIMED.includes(ex.name) ? s.reps + "s" : (s.weight ? s.weight + "lb" : "BW") + "×" + s.reps + (s.failure ? " (failure)" : "")).join(" · ");
       html += `<div><b>${esc(ex.name)}</b><br>${text}</div>`;
     });
-    html += `</details>`;
+    html += `<button data-save-preset="${w.id}" style="width:100%;margin-top:10px">Save as preset</button></details>`;
   });
+  openWorkoutId = null;
   if (logged.length === 0) html += `<p class="muted">No workouts yet.</p>`;
 
   html += `<h2>Backup</h2>
@@ -94,6 +96,22 @@ screenHistory.addEventListener("change", e => {
   if (e.target.id === "chart-pick") drawChart(e.target.value);
 });
 
+// Turn a finished workout into a preset (sets = the sets you did; weight is not saved)
+function savePresetFromWorkout(id) {
+  const w = allWorkouts().find(x => x.id === id);
+  const name = prompt("Preset name (for example: Push Day)", w.name);
+  if (!name || !name.trim()) return;
+  const info = allExercises();
+  const items = w.exercises.filter(ex => ex.sets.some(s => s.done)).map(ex => {
+    const known = info.find(i => i.name === ex.name) || {};
+    return { name: ex.name, muscle: ex.muscle || known.muscle || "Other", equipment: ex.equipment || known.equipment || "Other",
+      sets: ex.sets.filter(s => s.done).length, minReps: null, maxReps: null, superset: ex.superset || null };
+  });
+  newPreset(name.trim(), items);
+  toast("Preset saved. Find it in Workouts.");
+}
+
 screenHistory.addEventListener("click", e => {
   if (e.target.id === "export-btn") exportData();
+  else if (e.target.dataset.savePreset) savePresetFromWorkout(e.target.dataset.savePreset);
 });
