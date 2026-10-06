@@ -2,6 +2,10 @@
 
 const screenToday = document.getElementById("screen-today");
 
+// Which day the Today screen is showing. Tap a day in the week strip to change it.
+let viewKey = null;
+function viewDate() { return viewKey || todayKey(); }
+
 // ---------- Building a workout ----------
 
 // Find the most recent earlier workout where this exercise was actually done
@@ -68,18 +72,19 @@ function didTrain(key) {
 function renderWeek() {
   const now = new Date();
   const sinceMonday = (now.getDay() + 6) % 7;
-  const names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   let html = "";
   for (let i = 0; i < 7; i++) {
-    const key = dateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - sinceMonday + i));
-    html += `<div class="weekday ${didTrain(key) ? "trained" : ""} ${key === todayKey() ? "today" : ""}">
-      ${names[i]}<b>${didTrain(key) ? "✓" : "·"}</b></div>`;
+    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - sinceMonday + i);
+    const key = dateKey(date);
+    const preset = presetForDay(date.getDay());
+    html += `<button class="weekday ${didTrain(key) ? "trained" : ""} ${key === todayKey() ? "today" : ""} ${key === viewDate() ? "selected" : ""}" data-daykey="${key}">
+      ${WEEK[i][0]}<b>${didTrain(key) ? "✓" : "·"}</b><small>${preset ? esc(preset.name) : "Rest"}</small></button>`;
   }
   document.getElementById("week").innerHTML = html;
 }
 
 function dayNote(day) {
-  const weekday = new Date().getDay();
+  const weekday = new Date(viewDate() + "T00:00:00").getDay();
   if (weekday === 0 && day === "Legs") return "Sunday: Legs or rest. Your call. Tap Rest if you're beat.";
   if (day === "Cardio") return "Rest + cardio day. 20-30 min easy cardio, or the interval day: 8 rounds of 30 sec hard / 90 sec easy. Log it on the Cardio tab.";
   if (day === "Rest") return "Rest day. Recovery is when you grow. A walk or golf is great. Log it on the Cardio tab.";
@@ -132,25 +137,27 @@ function exerciseHtml(w, i, date) {
   return html + `</div>`;
 }
 
-// Today's preset(s): presets whose day tag matches today's weekday
+// Preset(s) tagged for the day being viewed
 function todaysPresetsHtml() {
-  const today = new Date().getDay();
-  const list = data.templates.filter(p => (p.days || []).includes(today));
+  const day = new Date(viewDate() + "T00:00:00");
+  const isToday = viewDate() === todayKey();
+  const title = isToday ? "Today's preset" : day.toLocaleDateString(undefined, { weekday: "long" }) + "'s preset";
+  const list = data.templates.filter(p => (p.days || []).includes(day.getDay()));
   if (list.length === 0) {
-    return `<div class="card"><div class="muted">Today's preset</div>
-      <p class="muted">None tagged for today. Tag a preset with a day in the Workouts tab.</p></div>`;
+    return `<div class="card"><div class="muted">${title}</div>
+      <p class="muted">Rest day. Nothing scheduled. Set your week in the Workouts tab.</p></div>`;
   }
   return list.map(p => `<div class="card">
-      <div class="muted">Today's preset</div>
+      <div class="muted">${title}</div>
       <h3>${esc(p.name)}</h3>
       <p class="muted">${p.exercises.length} exercises · ${esc(presetMuscles(p).join(", "))}</p>
       <button class="big primary" data-preset-start="${p.id}">Start</button></div>`).join("");
 }
 
 function renderToday() {
-  const date = todayKey();
+  const date = viewDate();
   const w = getWorkout(date);
-  const label = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  const label = new Date(date + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
   let html = `<h1>${w.day} Day</h1><p class="muted">${label}</p>${todaysPresetsHtml()}<div id="week"></div>`;
 
@@ -174,16 +181,19 @@ function renderToday() {
 // ---------- Handling taps and typing ----------
 
 screenToday.addEventListener("click", e => {
+  const dayCell = e.target.closest("[data-daykey]");
+  if (dayCell) { viewKey = dayCell.dataset.daykey; renderToday(); return; }
+
   const presetBtn = e.target.closest("[data-preset-start]");
   if (presetBtn) return startPreset(presetBtn.dataset.presetStart);
 
-  const w = getWorkout(todayKey());
+  const w = getWorkout(viewDate());
 
   const dayBtn = e.target.closest("[data-day]");
   if (dayBtn) {
     const anyDone = w.exercises.some(ex => ex.sets.some(s => s.done));
     if (anyDone && !confirm("Switching days clears today's logged sets. Continue?")) return;
-    data.workouts[todayKey()] = buildWorkout(dayBtn.dataset.day, todayKey());
+    data.workouts[viewDate()] = buildWorkout(dayBtn.dataset.day, viewDate());
     saveData();
     renderToday();
     return;
@@ -228,7 +238,7 @@ screenToday.addEventListener("click", e => {
 screenToday.addEventListener("input", e => {
   const field = e.target.dataset.field;
   if (!field) return;
-  const w = getWorkout(todayKey());
+  const w = getWorkout(viewDate());
   const ex = w.exercises[Number(e.target.dataset.ex)];
   ex.sets[Number(e.target.dataset.set)][field] = e.target.value;
   saveData();
@@ -238,13 +248,13 @@ screenToday.addEventListener("input", e => {
 // Picking a different option (e.g. Lat pulldown instead of Pull-ups)
 screenToday.addEventListener("change", e => {
   if (!e.target.classList.contains("pick")) return;
-  const w = getWorkout(todayKey());
+  const w = getWorkout(viewDate());
   const i = Number(e.target.dataset.ex);
   if (w.exercises[i].sets.some(s => s.done) && !confirm("Switching clears the sets you logged for this exercise. Continue?")) {
     renderToday();
     return;
   }
-  w.exercises[i] = buildExercise(PLAN[w.day][i], e.target.value, todayKey());
+  w.exercises[i] = buildExercise(PLAN[w.day][i], e.target.value, viewDate());
   saveData();
   renderToday();
 });

@@ -31,7 +31,10 @@ document.querySelector("nav").addEventListener("click", e => {
   const btn = e.target.closest("button");
   if (!btn) return;
   if (btn.id === "new-workout") startWorkout(); // the big "+"
-  else showScreen(btn.dataset.screen);
+  else {
+    if (btn.dataset.screen === "today") viewKey = null; // the Today tab always opens on today
+    showScreen(btn.dataset.screen);
+  }
 });
 
 seedPresets(); // add the starter presets on first launch

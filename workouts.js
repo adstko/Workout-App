@@ -8,23 +8,48 @@ let draft = null; // the preset being created/edited right now (null = just show
 
 // ---------- Helpers ----------
 
+function starterPreset(p) {
+  return {
+    id: uid(),
+    name: p.name,
+    days: p.days.slice(),
+    exercises: p.exercises.map(([name, sets, minReps, maxReps]) => {
+      const info = EXERCISES.find(e => e.name === name);
+      return { name: name, muscle: info.muscle, equipment: info.equipment, sets: sets, minReps: minReps, maxReps: maxReps, superset: null };
+    }),
+  };
+}
+
 // Add the starter presets once, on first launch, only if you have no presets yet
 function seedPresets() {
   if (data.presetsSeeded) return;
-  if (data.templates.length === 0) {
-    DEFAULT_PRESETS.forEach(p => {
-      data.templates.push({
-        id: uid(),
-        name: p.name,
-        days: p.days.slice(),
-        exercises: p.exercises.map(([name, sets, minReps, maxReps]) => {
-          const info = EXERCISES.find(e => e.name === name);
-          return { name: name, muscle: info.muscle, equipment: info.equipment, sets: sets, minReps: minReps, maxReps: maxReps, superset: null };
-        }),
-      });
-    });
-  }
+  if (data.templates.length === 0) DEFAULT_PRESETS.forEach(p => data.templates.push(starterPreset(p)));
   data.presetsSeeded = true;
+  saveData();
+}
+
+// The "Add starter presets" button: adds any of Push / Pull / Legs you don't already have
+function addStarterPresets() {
+  const missing = DEFAULT_PRESETS.filter(p => !data.templates.some(t => t.name === p.name));
+  missing.forEach(p => {
+    const preset = starterPreset(p);
+    preset.days = preset.days.filter(d => !presetForDay(d)); // don't take a day that's already scheduled
+    data.templates.push(preset);
+  });
+  saveData();
+  toast(missing.length ? "Added " + missing.map(p => p.name).join(", ") : "Push, Pull and Legs are already there.");
+}
+
+// The preset scheduled on a weekday (0 = Sunday ... 6 = Saturday), if any
+function presetForDay(n) {
+  return data.templates.find(p => (p.days || []).includes(n));
+}
+
+// Schedule a preset on a weekday (or make it a rest day with id ""). One preset per day.
+function setDaySchedule(n, id) {
+  data.templates.forEach(p => { p.days = (p.days || []).filter(d => d !== n); });
+  const p = data.templates.find(t => t.id === id);
+  if (p) p.days.push(n);
   saveData();
 }
 
@@ -75,7 +100,16 @@ function renderWorkouts() {
   html += `<div class="stack">
       <button class="big primary" id="wk-new">+ New preset</button>
       <button class="big" id="wk-empty">Start empty workout</button></div>
-    <h2>Presets</h2>`;
+    <h2>Weekly schedule</h2>
+    <div class="card">${WEEK.map(([label, n]) => {
+      const current = presetForDay(n);
+      return `<div class="sched-row"><b>${label}</b><select data-sched="${n}" aria-label="${label} workout">
+        <option value="">Rest day</option>
+        ${data.templates.map(p => `<option value="${p.id}" ${current && current.id === p.id ? "selected" : ""}>${esc(p.name)}</option>`).join("")}
+      </select></div>`;
+    }).join("")}
+      <p class="muted">Pick what you do each day. It shows in the week strip and on the Today screen.</p></div>
+    <h2>Presets (templates)</h2>`;
 
   if (data.templates.length === 0) {
     html += `<p class="muted">No presets yet. Tap "+ New preset", or finish a workout and tap "Save as preset".</p>`;
@@ -92,6 +126,7 @@ function renderWorkouts() {
         <button class="danger" data-delete="${p.id}">Delete</button>
       </div></div>`;
   });
+  html += `<button class="big" id="wk-starter" style="margin-top:14px">Add starter presets (Push / Pull / Legs)</button>`;
   screenWorkouts.innerHTML = html;
 }
 
@@ -198,6 +233,7 @@ screenWorkouts.addEventListener("click", e => {
   if (!btn) return;
 
   if (btn.id === "wk-resume") showScreen("workout");
+  else if (btn.id === "wk-starter") { addStarterPresets(); renderWorkouts(); }
   else if (btn.id === "wk-empty") startWorkout();
   else if (btn.id === "wk-new") { draft = { id: uid(), name: "", days: [], exercises: [] }; renderWorkouts(); }
   else if (btn.dataset.start) startPreset(btn.dataset.start);
@@ -315,3 +351,11 @@ function endDrag() {
 }
 screenWorkouts.addEventListener("pointerup", endDrag);
 screenWorkouts.addEventListener("pointercancel", endDrag);
+
+// Changing a day in the weekly schedule
+screenWorkouts.addEventListener("change", e => {
+  if (e.target.dataset.sched) {
+    setDaySchedule(Number(e.target.dataset.sched), e.target.value);
+    toast("Schedule updated");
+  }
+});

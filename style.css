@@ -205,3 +205,11 @@ button.danger { color: var(--red); }
 .reps-row input { text-align: center; font-size: 20px; padding: 0 4px; }
 .pcard > button.on { background: var(--blue); color: #06182e; font-weight: 700; border: none; }
 .card .row button { font-size: 15px; padding: 0 4px; }
+
+/* ---------- Week strip as buttons + weekly schedule ---------- */
+button.weekday { min-height: 0; min-width: 0; padding: 6px 0 5px; font: inherit; font-size: 14px; cursor: pointer; }
+.weekday small { display: block; font-size: 11px; color: var(--text); padding: 0 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.weekday.selected { background: #1f3a2b; border-color: var(--green); }
+.weekday.today:not(.selected) { border-color: var(--blue); }
+.sched-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+.sched-row b { width: 42px; }
