@@ -39,7 +39,7 @@ function renderHistory() {
 
   html += `<h2>Apple Health</h2>
     <div class="card">
-      <p class="muted">Each workout above has a "Send to Apple Health" button, and so does each cardio entry. Weights are logged as ${WEIGHTS_HEALTH_TYPE}. Cardio is logged as the type you picked (Walking, Running, Cycling...).</p>
+      <p class="muted">Each workout above has a "Send to Apple Health" button, and so does each cardio entry. Weights are logged as ${WEIGHTS_HEALTH_TYPE}. Cardio is logged as the type you picked (Walking, Running, Cycling...). Golf is skipped because 18Birdies already logs it in Fitness.</p>
       <label for="health-name">Name of your Shortcut</label>
       <input id="health-name" type="text" maxlength="60" value="${esc(data.shortcutName)}">
       <details><summary>One-time setup (iPhone)</summary>

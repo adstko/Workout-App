@@ -67,10 +67,10 @@ const HEALTH_TYPES = {
   "Bike": "Cycling",
   "Jog": "Running",
   "Intervals (8 x 30s hard / 90s easy)": "High Intensity Interval Training",
-  "Golf": "Golf",
+  "Golf": null, // null = never sent: 18Birdies already logs golf in Apple Fitness
   "Long walk": "Walking",
   "Other": "Other",
 };
 function healthTypeFor(cardioType) {
-  return HEALTH_TYPES[cardioType] || "Other";
+  return cardioType in HEALTH_TYPES ? HEALTH_TYPES[cardioType] : "Other";
 }

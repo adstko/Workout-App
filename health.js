@@ -38,6 +38,7 @@ async function sendWorkoutToHealth(id) {
 // A cardio entry (from the Cardio screen): the Health type follows the cardio type you picked
 function sendCardioToHealth(id) {
   const c = data.cardio.find(x => x.id === id);
+  if (!healthTypeFor(c.type)) return; // golf is already logged by 18Birdies
   const start = guessStart(c.date, c.minutes);
   openShortcut({ type: healthTypeFor(c.type), minutes: c.minutes, start: start.toISOString(), name: c.type });
 }
