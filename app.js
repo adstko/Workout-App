@@ -37,5 +37,17 @@ document.querySelector("nav").addEventListener("click", e => {
   }
 });
 
+// If the app is left open past midnight, redraw the Today screen on the new day (so the week bar moves on).
+// Other screens are left alone so nothing you're typing gets wiped.
+let shownDay = todayKey();
+function checkNewDay() {
+  if (todayKey() === shownDay) return;
+  shownDay = todayKey();
+  viewKey = null;
+  if (!screenToday.hidden) renderToday();
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) checkNewDay(); });
+setInterval(checkNewDay, 60000);
+
 seedPresets(); // add the starter presets on first launch
 showScreen("today");
