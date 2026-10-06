@@ -74,7 +74,7 @@ function renderExercise() {
   if (timerOn) tickTimer(); // a running timer keeps showing in the new clock
 }
 
-screenExercise.addEventListener("click", e => {
+screenExercise.addEventListener("click", async e => {
   const a = data.active;
   const ex = a.exercises[currentEx];
   const btn = e.target.closest("button");
@@ -92,7 +92,7 @@ screenExercise.addEventListener("click", e => {
   else if (btn.id === "ex-menu") { menuOpen = !menuOpen; renderExercise(); }
   else if (btn.id === "m-note") { noteOpen = true; menuOpen = false; renderExercise(); document.getElementById("ex-note").focus(); }
   else if (btn.id === "m-remove") {
-    if (!confirm("Remove " + ex.name + " from this workout?")) return;
+    if (!(await askConfirm("Remove " + ex.name + " from this workout?", "Remove"))) return;
     a.exercises.splice(currentEx, 1);
     if (ex.superset && a.exercises.filter(o => o.superset === ex.superset).length < 2) {
       a.exercises.forEach(o => { if (o.superset === ex.superset) o.superset = null; }); // partner is alone now

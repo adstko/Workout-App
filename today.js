@@ -180,7 +180,7 @@ function renderToday() {
 
 // ---------- Handling taps and typing ----------
 
-screenToday.addEventListener("click", e => {
+screenToday.addEventListener("click", async e => {
   const dayCell = e.target.closest("[data-daykey]");
   if (dayCell) { viewKey = dayCell.dataset.daykey; renderToday(); return; }
 
@@ -192,7 +192,7 @@ screenToday.addEventListener("click", e => {
   const dayBtn = e.target.closest("[data-day]");
   if (dayBtn) {
     const anyDone = w.exercises.some(ex => ex.sets.some(s => s.done));
-    if (anyDone && !confirm("Switching days clears today's logged sets. Continue?")) return;
+    if (anyDone && !(await askConfirm("Switching days clears today's logged sets. Continue?", "Switch"))) return;
     data.workouts[viewDate()] = buildWorkout(dayBtn.dataset.day, viewDate());
     saveData();
     renderToday();
@@ -246,11 +246,11 @@ screenToday.addEventListener("input", e => {
 });
 
 // Picking a different option (e.g. Lat pulldown instead of Pull-ups)
-screenToday.addEventListener("change", e => {
+screenToday.addEventListener("change", async e => {
   if (!e.target.classList.contains("pick")) return;
   const w = getWorkout(viewDate());
   const i = Number(e.target.dataset.ex);
-  if (w.exercises[i].sets.some(s => s.done) && !confirm("Switching clears the sets you logged for this exercise. Continue?")) {
+  if (w.exercises[i].sets.some(s => s.done) && !(await askConfirm("Switching clears the sets you logged for this exercise. Continue?", "Switch"))) {
     renderToday();
     return;
   }

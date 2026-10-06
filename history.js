@@ -81,11 +81,26 @@ function drawChart(name) {
   </svg><p class="muted">Heaviest set per workout (lb)</p>`;
 }
 
-function exportData() {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+async function exportData() {
+  const text = JSON.stringify(data, null, 2);
+  const filename = "workout-data-" + todayKey() + ".json";
+
+  // Some viewers block direct downloads. There, ask the viewer to save through the "downloads" capability.
+  try {
+    const downloads = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
+    if (downloads) {
+      await downloads.save({ filename: filename, data: text });
+      toast("Export saved");
+      return;
+    }
+  } catch (e) {
+    if (e && e.code === "declined") return; // they said no
+  }
+
+  // Normal browsers: download the file directly
   const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = "workout-data-" + todayKey() + ".json";
+  link.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  link.download = filename;
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -97,9 +112,9 @@ screenHistory.addEventListener("change", e => {
 });
 
 // Turn a finished workout into a preset (sets = the sets you did; weight is not saved)
-function savePresetFromWorkout(id) {
+async function savePresetFromWorkout(id) {
   const w = allWorkouts().find(x => x.id === id);
-  const name = prompt("Preset name (for example: Push Day)", w.name);
+  const name = await askText("Preset name (for example: Push Day)", w.name);
   if (!name || !name.trim()) return;
   const info = allExercises();
   const items = w.exercises.filter(ex => ex.sets.some(s => s.done)).map(ex => {

@@ -66,13 +66,13 @@ function renderWorkout() {
   elapsedId = setInterval(() => { clock.textContent = fmtClock((Date.now() - a.startedAt) / 1000); }, 1000);
 }
 
-function finishWorkout() {
+async function finishWorkout() {
   const a = data.active;
   const finished = a.exercises
     .filter(ex => ex.sets.some(s => s.done))
     .map(ex => Object.assign({}, ex, { sets: ex.sets.filter(s => s.done) })); // keep only the sets you did
   if (finished.length === 0) {
-    if (confirm("You haven't finished any sets. Discard this workout?")) {
+    if (await askConfirm("You haven't finished any sets. Discard this workout?", "Discard")) {
       data.active = null;
       saveData();
       showScreen("workouts");
@@ -99,7 +99,7 @@ function finishWorkout() {
   toast("Workout saved 💪");
   showScreen("history");
 
-  if (changed && confirm('You changed this workout. Update the "' + preset.name + '" preset with your changes?\n\nOK = update the preset\nCancel = leave the preset as it was')) {
+  if (changed && await askConfirm('You changed this workout. Update the "' + preset.name + '" preset with your changes?', "Update preset", "Leave it")) {
     preset.exercises = a.exercises.map(ex => ({ name: ex.name, muscle: ex.muscle, equipment: ex.equipment, sets: ex.sets.length,
       minReps: ex.minReps, maxReps: ex.maxReps, superset: ex.superset }));
     saveData();
@@ -114,16 +114,16 @@ function presetChanged(preset, exercises) {
   return fromPreset !== fromWorkout;
 }
 
-function saveAsPreset() {
+async function saveAsPreset() {
   const a = data.active;
-  const name = prompt("Preset name (for example: Push Day)", a.name === "Workout" ? "" : a.name);
+  const name = await askText("Preset name (for example: Push Day)", a.name === "Workout" ? "" : a.name);
   if (!name || !name.trim()) return;
   newPreset(name.trim(), a.exercises.map(ex => ({ name: ex.name, muscle: ex.muscle, equipment: ex.equipment,
     sets: ex.sets.length, minReps: ex.minReps, maxReps: ex.maxReps, superset: ex.superset })));
   toast("Preset saved. Find it in Workouts.");
 }
 
-screenWorkout.addEventListener("click", e => {
+screenWorkout.addEventListener("click", async e => {
   const a = data.active;
   const open = e.target.closest("[data-open]");
   if (open) return openExercise(Number(open.dataset.open));
@@ -132,7 +132,7 @@ screenWorkout.addEventListener("click", e => {
   if (id === "w-finish") finishWorkout();
   else if (id === "w-template") saveAsPreset();
   else if (id === "w-discard") {
-    if (confirm("Discard this workout? Everything you logged in it will be lost.")) {
+    if (await askConfirm("Discard this workout? Everything you logged in it will be lost.", "Discard")) {
       data.active = null;
       saveData();
       stopTimer();

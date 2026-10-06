@@ -28,6 +28,18 @@
 
   <div id="toast" hidden></div>
 
+  <!-- In-page replacement for confirm()/prompt() -->
+  <div id="dialog" hidden>
+    <div class="dialog-box" role="dialog" aria-modal="true">
+      <p id="dialog-msg"></p>
+      <input id="dialog-input" type="text" maxlength="40" hidden>
+      <div class="row">
+        <button id="dialog-cancel" type="button">Cancel</button>
+        <button id="dialog-ok" type="button" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
+
   <nav>
     <button data-screen="today" class="active">Today</button>
     <button data-screen="workouts">Workouts</button>
@@ -39,6 +51,7 @@
   <script src="plan.js"></script>
   <script src="exercises.js"></script>
   <script src="storage.js"></script>
+  <script src="ui.js"></script>
   <script src="timer.js"></script>
   <script src="today.js"></script>
   <script src="picker.js"></script>

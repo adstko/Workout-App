@@ -132,9 +132,9 @@ function renderWorkouts() {
 
 // Start a preset: the normal workout screen with all its exercises and set rows ready.
 // Weight and reps are pre-filled from the last time you did each exercise (makeExercise).
-function startPreset(id) {
+async function startPreset(id) {
   const p = data.templates.find(t => t.id === id);
-  if (data.active && !confirm("You already have a workout in progress. Replace it with this preset?")) return;
+  if (data.active && !(await askConfirm("You already have a workout in progress. Replace it with this preset?", "Replace"))) return;
   data.active = {
     name: p.name,
     startedAt: Date.now(),
@@ -228,7 +228,7 @@ function addExercisesToDraft() {
   });
 }
 
-screenWorkouts.addEventListener("click", e => {
+screenWorkouts.addEventListener("click", async e => {
   const btn = e.target.closest("button");
   if (!btn) return;
 
@@ -255,7 +255,7 @@ screenWorkouts.addEventListener("click", e => {
   }
   else if (btn.dataset.delete) {
     const p = data.templates.find(t => t.id === btn.dataset.delete);
-    if (confirm('Delete preset "' + p.name + '"? Your logged workouts are not affected.')) {
+    if (await askConfirm('Delete preset "' + p.name + '"? Your logged workouts are not affected.', "Delete")) {
       data.templates = data.templates.filter(x => x.id !== p.id);
       saveData();
       renderWorkouts();

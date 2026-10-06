@@ -52,9 +52,9 @@ screenCardio.addEventListener("submit", e => {
   renderCardio();
 });
 
-screenCardio.addEventListener("click", e => {
+screenCardio.addEventListener("click", async e => {
   const btn = e.target.closest("[data-delete]");
-  if (btn && confirm("Delete this cardio entry?")) {
+  if (btn && await askConfirm("Delete this cardio entry?", "Delete")) {
     data.cardio = data.cardio.filter(c => c.id !== btn.dataset.delete);
     saveData();
     renderCardio();
