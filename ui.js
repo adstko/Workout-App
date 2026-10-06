@@ -14,8 +14,8 @@ function askConfirm(message, okLabel, cancelLabel) {
   return ask(message, null, okLabel, cancelLabel);
 }
 
-function askText(message, value) {
-  return ask(message, value || "", "Save", "Cancel");
+function askText(message, value, okLabel) {
+  return ask(message, value || "", okLabel || "Save", "Cancel");
 }
 
 function ask(message, textValue, okLabel, cancelLabel) {

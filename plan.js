@@ -59,3 +59,18 @@ const DEFAULT_PRESETS = [
     ["Squat", 4, 6, 8], ["Romanian deadlift", 3, 8, 10], ["Leg press", 3, 10, 12],
     ["Leg curl", 3, 10, 12], ["Calf raises", 4, 12, 15], ["Plank", 3, null, null] ] },
 ];
+
+// Apple Health workout types for "Send to Apple Health". Names match Apple's own.
+const WEIGHTS_HEALTH_TYPE = "Traditional Strength Training";
+const HEALTH_TYPES = {
+  "Incline walk": "Walking",
+  "Bike": "Cycling",
+  "Jog": "Running",
+  "Intervals (8 x 30s hard / 90s easy)": "High Intensity Interval Training",
+  "Golf": "Golf",
+  "Long walk": "Walking",
+  "Other": "Other",
+};
+function healthTypeFor(cardioType) {
+  return HEALTH_TYPES[cardioType] || "Other";
+}

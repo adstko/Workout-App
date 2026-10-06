@@ -25,6 +25,7 @@ function loadData() {
     presetsSeeded: false,  // starter presets are added only once
     customExercises: [],   // exercises you added yourself
     customRest: 30,        // rest timer (seconds) for the "+" flow
+    shortcutName: "Log Workout to Health", // the iOS Shortcut that logs to Apple Health
   };
   try {
     return Object.assign(empty, JSON.parse(localStorage.getItem(STORAGE_KEY)));
