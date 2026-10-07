@@ -41,7 +41,15 @@ const TIMED = ["Plank", "Side plank"];
 // Which day to show by default. getDay(): Sunday = 0 ... Saturday = 6
 const DEFAULT_DAYS = ["Rest", "Push", "Pull", "Legs", "Cardio", "Push", "Rest"]; // Sat and Sun are rest days
 
-const CARDIO_TYPES = ["Incline walk", "Bike", "Jog", "Intervals (8 x 30s hard / 90s easy)", "Golf", "Long walk", "Other"];
+const CARDIO_TYPES = ["Incline walk", "Bike", "Jog", "Intervals (8 x 30s hard / 90s easy)", "Stairs", "Golf", "Long walk", "Other"];
+
+// "Net miles ran": everything counted as running miles, so different cardio can be compared fairly.
+// These are rough rules of thumb based on how much effort each takes. Change the numbers if you disagree.
+const BIKE_MILES_PER_RUN_MILE = 3;  // 3 miles biked = 1 mile ran
+const FLOORS_PER_RUN_MILE = 40;     // 40 floors of stairs (about 10 ft each) = 1 mile ran
+function netMilesRan(ran, biked, floors) {
+  return ran + biked / BIKE_MILES_PER_RUN_MILE + floors / FLOORS_PER_RUN_MILE;
+}
 
 // Days for the preset day tags (label, getDay() number), Monday first
 const WEEK = [["Mon", 1], ["Tue", 2], ["Wed", 3], ["Thu", 4], ["Fri", 5], ["Sat", 6], ["Sun", 0]];
@@ -67,6 +75,7 @@ const HEALTH_TYPES = {
   "Bike": "Cycling",
   "Jog": "Running",
   "Intervals (8 x 30s hard / 90s easy)": "High Intensity Interval Training",
+  "Stairs": "Stair Climbing",
   "Golf": null, // null = never sent: 18Birdies already logs golf in Apple Fitness
   "Long walk": "Walking",
   "Other": "Other",

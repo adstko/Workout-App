@@ -28,7 +28,11 @@ function renderCardio() {
       <select name="type">${CARDIO_TYPES.map(t => `<option>${esc(t)}</option>`).join("")}</select>
       <label>Minutes</label>
       <input type="number" name="minutes" inputmode="numeric" min="1" max="300" placeholder="e.g. 25" required>
-      <div class="two">
+      <div id="row-stairs" hidden>
+        <label>Floors climbed (optional)</label>
+        <input type="number" name="floors" inputmode="numeric" min="0" max="5000" step="1" placeholder="e.g. 30">
+      </div>
+      <div class="two" id="row-miles">
         <div><label>Miles (optional)</label>
           <input type="number" name="miles" inputmode="decimal" min="0" max="500" step="any" placeholder="e.g. 3.1"></div>
         <div><label>Climbed, ft (optional)</label>
@@ -47,7 +51,7 @@ function renderCardio() {
   if (list.length === 0) html += `<p class="muted">Nothing logged yet.</p>`;
   list.forEach(c => {
     html += `<div class="card entry"><div>
-      <b>${esc(c.type)}</b> · ${c.minutes} min${c.miles ? " · " + c.miles + " mi" : ""}${c.climb ? " · " + c.climb + " ft climbed" : ""}<br>
+      <b>${esc(c.type)}</b> · ${c.minutes} min${c.floors ? " · " + c.floors + " floors" : ""}${c.miles ? " · " + c.miles + " mi" : ""}${c.climb && !c.floors ? " · " + c.climb + " ft climbed" : ""}<br>
       <span class="muted">${prettyDate(c.date)}${c.notes ? " · " + esc(c.notes) : ""}${healthTypeFor(c.type) ? "" : " · already in Fitness via 18Birdies"}</span>
       </div><div class="btns">${healthTypeFor(c.type) ? `<button data-health="${c.id}">Send to Health</button>` : ""}<button data-delete="${c.id}">Delete</button></div></div>`;
   });
@@ -58,13 +62,17 @@ function renderCardio() {
 screenCardio.addEventListener("submit", e => {
   e.preventDefault();
   const form = e.target;
+  const stairs = form.type.value === "Stairs";
+  const floors = stairs && form.floors.value ? Math.max(0, Math.round(Number(form.floors.value))) : null;
   data.cardio.push({
     id: String(Date.now()),
     date: form.date.value,
     type: form.type.value,
     minutes: Number(form.minutes.value),
-    miles: form.miles.value ? Math.max(0, Number(form.miles.value)) : null,   // optional
-    climb: form.climb.value ? Math.max(0, Number(form.climb.value)) : null,   // optional, feet
+    miles: !stairs && form.miles.value ? Math.max(0, Number(form.miles.value)) : null,   // optional
+    floors: floors,                                                                      // stairs only
+    climb: stairs ? (floors ? floors * 10 : null)                                         // a floor is about 10 ft
+                  : (form.climb.value ? Math.max(0, Number(form.climb.value)) : null),   // optional, feet
     notes: form.notes.value.trim(),
   });
   saveData();
@@ -81,5 +89,14 @@ screenCardio.addEventListener("click", async e => {
     saveData();
     queueOnlineSync();
     renderCardio();
+  }
+});
+
+// Stairs: show the Floors box instead of Miles / Climbed
+screenCardio.addEventListener("change", e => {
+  if (e.target.name === "type") {
+    const stairs = e.target.value === "Stairs";
+    document.getElementById("row-stairs").hidden = !stairs;
+    document.getElementById("row-miles").hidden = stairs;
   }
 });

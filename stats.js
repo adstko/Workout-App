@@ -24,7 +24,7 @@ function periodStart(period) {
 // Add up everything between two dates (inclusive)
 function computeStats(from, to) {
   to = to || "9999-99-99";
-  const s = { lbs: 0, workouts: 0, sets: 0, run: 0, bike: 0, walk: 0, climb: 0, cardioMin: 0, byLift: {} };
+  const s = { lbs: 0, workouts: 0, sets: 0, run: 0, bike: 0, walk: 0, climb: 0, floors: 0, net: 0, cardioMin: 0, byLift: {} };
 
   allWorkouts().filter(w => w.date >= from && w.date <= to).forEach(w => {
     let didAny = false;
@@ -46,7 +46,9 @@ function computeStats(from, to) {
     else if (BIKE_TYPES.includes(c.type)) s.bike += miles;
     else s.walk += miles;
     s.climb += Number(c.climb) || 0;
+    s.floors += Number(c.floors) || 0;
   });
+  s.net = netMilesRan(s.run, s.bike, s.floors); // running-equivalent miles (bike and stairs converted)
   return s;
 }
 
@@ -96,9 +98,11 @@ function statsHtml() {
     ${statCard(fmt(s.lbs), "lbs lifted")}
     ${statCard(s.workouts, s.workouts === 1 ? "workout" : "workouts")}
     ${statCard(fmt(s.sets), "sets done")}
+    ${statCard(fmtMiles(s.net), "net miles ran")}
     ${statCard(fmtMiles(s.run), "miles ran")}
     ${statCard(fmtMiles(s.bike), "miles biked")}
     ${statCard(fmtMiles(s.walk), "miles walked")}
+    ${statCard(fmt(s.floors), "floors climbed")}
     ${statCard(fmt(s.climb), "feet climbed")}
     ${statCard(fmt(s.cardioMin), "cardio minutes")}
   </div>`;
@@ -123,12 +127,13 @@ function statsHtml() {
     const start = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() - 7 * i);
     const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
     const w = computeStats(dateKey(start), dateKey(end));
-    lbs.push(w.lbs); miles.push(w.run + w.bike + w.walk);
+    lbs.push(w.lbs); miles.push(w.net);
     labels.push(start.toLocaleDateString(undefined, { month: "numeric", day: "numeric" }));
   }
   html += `<h2>Lbs lifted per week</h2>${barChart(lbs, labels, "Lbs lifted")}
-    <h2>Miles per week</h2>${barChart(miles, labels, "Miles")}
-    <p class="muted">Weeks start on Monday. Lbs lifted adds up weight × reps for every set you finished. Planks and bodyweight sets with no weight add 0.</p>`;
+    <h2>Net miles ran per week</h2>${barChart(miles, labels, "Net miles ran")}
+    <p class="muted">Weeks start on Monday. Lbs lifted adds up weight × reps for every set you finished. Planks and bodyweight sets with no weight add 0.
+    Net miles ran counts ${BIKE_MILES_PER_RUN_MILE} miles biked or ${FLOORS_PER_RUN_MILE} floors of stairs as 1 mile ran.</p>`;
   return html;
 }
 

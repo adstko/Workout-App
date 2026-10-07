@@ -2,15 +2,15 @@
 // Whatever comes from other people is treated as untrusted text: it is escaped before it goes on the page.
 
 let friendsView = "board";    // "board", "feed", "friends" or "me"
-let boardMetric = "lbs";      // "lbs", "ran", "workouts" or "miles"
+let boardMetric = "lbs";      // "lbs", "net", "workouts" or "ran"
 let boardPeriod = "week";     // "week" or "all"
 let fr = { loaded: false, loading: false, error: "", at: 0, profiles: [], friendships: [], stats: [], feed: [] };
 
 const METRICS = {
   lbs: { label: "Lbs lifted", unit: "lbs", value: r => r.lbs },
-  ran: { label: "Miles ran", unit: "mi", value: r => r.ran },
+  net: { label: "Net miles ran", unit: "mi", value: r => netMilesRan(r.ran, r.biked, r.floors) }, // bike + stairs counted as running
   workouts: { label: "Workouts", unit: "", value: r => r.workouts },
-  miles: { label: "All miles", unit: "mi", value: r => r.ran + r.biked + r.walked },
+  ran: { label: "Miles ran", unit: "mi", value: r => r.ran },
 };
 
 // ---------- Loading everything from the online service ----------
@@ -20,10 +20,11 @@ async function loadFriends() {
   fr.loading = true;
   try {
     await syncNow(); // make sure my own numbers are up to date first
+    const weekly = cols => rest("weekly_stats?select=owner,week_start,lbs_lifted,workouts,sets,miles_ran,miles_biked,miles_walked,feet_climbed," + cols + "cardio_minutes,profiles(nickname)&limit=1000");
     const [profiles, friendships, stats, feed] = await Promise.all([
       rest("profiles?select=id,nickname,friend_code,share_workouts,share_stats"),
       rest("friendships?select=id,status,requester,addressee,created_at&order=created_at.desc"),
-      rest("weekly_stats?select=owner,week_start,lbs_lifted,workouts,sets,miles_ran,miles_biked,miles_walked,feet_climbed,cardio_minutes,profiles(nickname)&limit=1000"),
+      weekly("floors_climbed,").catch(e => weekly("")), // an older database has no floors column yet: ask without it
       rest("shared_workouts?select=id,owner,name,workout_date,minutes,exercises,profiles(nickname)&order=workout_date.desc,created_at.desc&limit=40"),
     ]);
     fr = Object.assign(fr, { profiles: profiles, friendships: friendships, stats: stats, feed: feed, loaded: true, error: "", at: Date.now() });
@@ -85,9 +86,9 @@ function boardRows() {
   const byOwner = {};
   fr.stats.forEach(row => {
     if (boardPeriod === "week" && row.week_start !== thisMonday) return;
-    const r = byOwner[row.owner] || (byOwner[row.owner] = { id: row.owner, name: row.profiles ? row.profiles.nickname : "someone", lbs: 0, ran: 0, biked: 0, walked: 0, workouts: 0 });
+    const r = byOwner[row.owner] || (byOwner[row.owner] = { id: row.owner, name: row.profiles ? row.profiles.nickname : "someone", lbs: 0, ran: 0, biked: 0, walked: 0, floors: 0, workouts: 0 });
     r.lbs += Number(row.lbs_lifted) || 0; r.ran += Number(row.miles_ran) || 0; r.biked += Number(row.miles_biked) || 0;
-    r.walked += Number(row.miles_walked) || 0; r.workouts += Number(row.workouts) || 0;
+    r.walked += Number(row.miles_walked) || 0; r.workouts += Number(row.workouts) || 0; r.floors += Number(row.floors_climbed) || 0;
   });
   return Object.values(byOwner);
 }
@@ -115,7 +116,8 @@ function boardHtml() {
         <div class="bar"><i style="width:${Math.max(2, Math.round(v / top * 100))}%"></i></div></div>
       <b class="val">${shown}<small> ${m.unit}</small></b></div>`;
   }).join("");
-  return html + `<p class="muted">Totals come from what each person shares. They're self-reported.</p>`;
+  const note = boardMetric === "net" ? `Net miles ran counts ${BIKE_MILES_PER_RUN_MILE} miles biked or ${FLOORS_PER_RUN_MILE} floors of stairs as 1 mile ran, so different cardio can be compared. ` : "";
+  return html + `<p class="muted">${note}Totals come from what each person shares. They're self-reported.</p>`;
 }
 
 // "4 × 8 @ 100 lb" or a list when the sets differ

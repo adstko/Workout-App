@@ -66,6 +66,8 @@ create table if not exists public.weekly_stats (
   updated_at timestamptz not null default now(),
   primary key (owner, week_start)
 );
+-- floors of stairs climbed (added later, so it is added separately for databases that already have this table)
+alter table public.weekly_stats add column if not exists floors_climbed integer not null default 0 check (floors_climbed between 0 and 5000);
 
 -- Used only to slow down anyone guessing friend codes. Nobody can read it directly.
 create table if not exists public.friend_lookups (
@@ -235,6 +237,25 @@ begin
         cardio_minutes = excluded.cardio_minutes, updated_at = now();
 end $$;
 
+-- Same as above, plus floors of stairs. (The older 9-number version above stays so apps that are not updated yet still work.)
+create or replace function public.save_week_stats(p_week date, p_lbs bigint, p_workouts integer, p_sets integer, p_ran numeric,
+                                                  p_biked numeric, p_walked numeric, p_feet integer, p_minutes integer, p_floors integer) returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  if auth.uid() is null then raise exception 'not signed in'; end if;
+  if not exists (select 1 from public.profiles where id = auth.uid()) then raise exception 'make a nickname first'; end if;
+  if extract(isodow from p_week) <> 1 or p_week < current_date - 800 or p_week > current_date + 7 then raise exception 'bad week'; end if;
+  insert into public.weekly_stats (owner, week_start, lbs_lifted, workouts, sets, miles_ran, miles_biked, miles_walked, feet_climbed, cardio_minutes, floors_climbed, updated_at)
+  values (auth.uid(), p_week,
+          least(greatest(coalesce(p_lbs, 0), 0), 1000000), least(greatest(coalesce(p_workouts, 0), 0), 100), least(greatest(coalesce(p_sets, 0), 0), 2000),
+          least(greatest(coalesce(p_ran, 0), 0), 500), least(greatest(coalesce(p_biked, 0), 0), 1000), least(greatest(coalesce(p_walked, 0), 0), 500),
+          least(greatest(coalesce(p_feet, 0), 0), 100000), least(greatest(coalesce(p_minutes, 0), 0), 10080), least(greatest(coalesce(p_floors, 0), 0), 5000), now())
+  on conflict (owner, week_start) do update
+    set lbs_lifted = excluded.lbs_lifted, workouts = excluded.workouts, sets = excluded.sets, miles_ran = excluded.miles_ran,
+        miles_biked = excluded.miles_biked, miles_walked = excluded.miles_walked, feet_climbed = excluded.feet_climbed,
+        cardio_minutes = excluded.cardio_minutes, floors_climbed = excluded.floors_climbed, updated_at = now();
+end $$;
+
 -- "Stop sharing and delete my online data": removes the account and everything attached to it.
 create or replace function public.delete_my_account() returns void
 language plpgsql security definer set search_path = '' as $$
@@ -248,9 +269,11 @@ revoke execute on function public.is_friend(uuid), public.is_linked(uuid), publi
   public.create_profile(text), public.request_friend(text), public.accept_friend(bigint),
   public.share_workout(text, text, date, integer, jsonb),
   public.save_week_stats(date, bigint, integer, integer, numeric, numeric, numeric, integer, integer),
+  public.save_week_stats(date, bigint, integer, integer, numeric, numeric, numeric, integer, integer, integer),
   public.delete_my_account() from public, anon;
 grant execute on function public.is_friend(uuid), public.is_linked(uuid), public.can_see_workouts(uuid), public.can_see_stats(uuid),
   public.create_profile(text), public.request_friend(text), public.accept_friend(bigint),
   public.share_workout(text, text, date, integer, jsonb),
   public.save_week_stats(date, bigint, integer, integer, numeric, numeric, numeric, integer, integer),
+  public.save_week_stats(date, bigint, integer, integer, numeric, numeric, numeric, integer, integer, integer),
   public.delete_my_account() to authenticated;

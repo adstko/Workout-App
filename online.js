@@ -167,14 +167,26 @@ function weekRange(mondayText) {
   return [mondayText, dateKey(new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6))];
 }
 
+let oldDatabase = false; // true if the online database doesn't have the "floors" update yet
+
 async function sendWeek(mondayText) {
   const [from, to] = weekRange(mondayText);
   const s = computeStats(from, to);
-  await rpc("save_week_stats", {
+  const args = {
     p_week: mondayText, p_lbs: Math.round(s.lbs), p_workouts: s.workouts, p_sets: s.sets,
     p_ran: Math.round(s.run * 10) / 10, p_biked: Math.round(s.bike * 10) / 10, p_walked: Math.round(s.walk * 10) / 10,
     p_feet: Math.round(s.climb), p_minutes: Math.round(s.cardioMin),
-  });
+  };
+  if (!oldDatabase) {
+    try {
+      await rpc("save_week_stats", Object.assign({ p_floors: Math.round(s.floors) }, args));
+      return s;
+    } catch (e) {
+      if (!/PGRST202|could not find the function|does not exist/i.test(e.code + " " + e.message)) throw e;
+      oldDatabase = true; // not updated yet: use the older version (floors just won't show on the board)
+    }
+  }
+  await rpc("save_week_stats", args);
   return s;
 }
 

@@ -240,7 +240,7 @@ function mergeImport(inc, target) {
     const id = cleanId(c.id);
     if (target.cardio.some(x => x.id === id)) return void stats.same++;
     target.cardio.push({ id: id, date: c.date, type: String(c.type || "Other").slice(0, 60), minutes: Number(c.minutes),
-      miles: Number(c.miles) > 0 ? Number(c.miles) : null, climb: Number(c.climb) > 0 ? Number(c.climb) : null, notes: String(c.notes || "").slice(0, 200) });
+      miles: Number(c.miles) > 0 ? Number(c.miles) : null, floors: Number(c.floors) > 0 ? Math.round(Number(c.floors)) : null, climb: Number(c.climb) > 0 ? Number(c.climb) : null, notes: String(c.notes || "").slice(0, 200) });
     stats.cardio++;
   });
 
