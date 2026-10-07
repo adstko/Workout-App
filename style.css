@@ -256,3 +256,24 @@ svg rect.bar.now { fill: var(--green); }
 .board-row .val small { font-size: 13px; color: var(--muted); font-weight: 400; }
 .feed-list { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; font-size: 16px; }
 .row.grid2 button { flex: 1 1 calc(50% - 4px); }
+
+/* ---------- iPhone fixes ---------- */
+/* Tell the page to use the whole screen, then keep content clear of the notch and the home bar */
+html { background: var(--bg); }
+main {
+  padding-top: calc(16px + env(safe-area-inset-top));
+  padding-left: calc(16px + env(safe-area-inset-left));
+  padding-right: calc(16px + env(safe-area-inset-right));
+}
+nav { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+
+/* Boxes never get wider than the card they are in */
+input, select, textarea { max-width: 100%; min-width: 0; }
+
+/* iPhone Safari draws date boxes at their own width. Make them behave like the other boxes. */
+input[type="date"] {
+  -webkit-appearance: none; appearance: none;
+  display: block; width: 100%; max-width: 100%; min-width: 0;
+  text-align: left; line-height: normal;
+}
+input[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; min-width: 0; }
