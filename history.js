@@ -53,8 +53,12 @@ function renderHistory() {
       </details>
     </div>
     <h2>Backup</h2>
-    <button class="big primary" id="export-btn">Export my data</button>
-    <p class="muted">Downloads all your workouts and cardio as a file.</p>`;
+    <div class="stack">
+      <button class="big primary" id="export-btn">Export my data</button>
+      <button class="big" id="import-btn">Import data</button>
+    </div>
+    <input type="file" id="import-file" accept=".json,application/json" hidden>
+    <p class="muted">Export saves all your workouts, cardio and presets to a file. Import adds a backup file to what you have now. It never replaces or deletes your current logs.</p>`;
 
   screenHistory.innerHTML = html;
   if (names.length) drawChart(names[0]);
@@ -152,5 +156,148 @@ screenHistory.addEventListener("input", e => {
   if (e.target.id === "health-name") {
     data.shortcutName = e.target.value;
     saveData();
+  }
+});
+
+// ---------- Import ----------
+// Adds a backup file (made with "Export my data") to your current data. Nothing you already have is
+// replaced or deleted. The merge runs on a copy first, so we can show what it found before changing anything.
+
+const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
+
+// Ids end up inside HTML attributes, so only allow plain ones. Anything else gets a fresh id.
+function cleanId(id) {
+  return typeof id === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(id) ? id : uid();
+}
+
+function hasDoneSets(exercises) {
+  return exercises.some(ex => ex.sets.some(s => s.done));
+}
+
+// A list of exercises with sets, or null if it doesn't look right
+function cleanExercises(list) {
+  if (!Array.isArray(list)) return null;
+  const out = [];
+  for (const ex of list) {
+    if (!ex || typeof ex.name !== "string" || !Array.isArray(ex.sets)) return null;
+    out.push(Object.assign({}, ex, {
+      name: ex.name.slice(0, 60),
+      sets: ex.sets.filter(s => s && typeof s === "object").map(s => Object.assign({}, s, { done: !!s.done })),
+    }));
+  }
+  return out;
+}
+
+// Merge the file's contents (inc) into target. Returns counts for the summary.
+function mergeImport(inc, target) {
+  const stats = { workouts: 0, cardio: 0, presets: 0, exercises: 0, same: 0, skipped: 0 };
+
+  // Push/Pull/Legs screen logs, one per date
+  const oldLogs = inc.workouts && typeof inc.workouts === "object" ? inc.workouts : {};
+  Object.keys(oldLogs).forEach(date => {
+    const exercises = DATE_KEY.test(date) && oldLogs[date] ? cleanExercises(oldLogs[date].exercises) : null;
+    if (!exercises) return void stats.skipped++;
+    if (!hasDoneSets(exercises)) return; // empty placeholder days are not worth importing
+    const have = target.workouts[date];
+    if (have && hasDoneSets(have.exercises)) return void stats.same++; // you already logged that day
+    target.workouts[date] = { day: typeof oldLogs[date].day === "string" ? oldLogs[date].day.slice(0, 20) : "Rest", exercises: exercises };
+    stats.workouts++;
+  });
+
+  // Workouts from the "+" flow
+  (Array.isArray(inc.sessions) ? inc.sessions : []).forEach(s => {
+    const exercises = s && DATE_KEY.test(s.date) ? cleanExercises(s.exercises) : null;
+    if (!exercises) return void stats.skipped++;
+    const id = cleanId(s.id);
+    if (target.sessions.some(x => x.id === id)) return void stats.same++;
+    target.sessions.push({ id: id, date: s.date, name: String(s.name || "Workout").slice(0, 40), startedAt: Number(s.startedAt) || 0,
+      minutes: Number(s.minutes) || 0, exercises: exercises });
+    stats.workouts++;
+  });
+
+  // Cardio
+  (Array.isArray(inc.cardio) ? inc.cardio : []).forEach(c => {
+    if (!c || !DATE_KEY.test(c.date) || !(Number(c.minutes) > 0)) return void stats.skipped++;
+    const id = cleanId(c.id);
+    if (target.cardio.some(x => x.id === id)) return void stats.same++;
+    target.cardio.push({ id: id, date: c.date, type: String(c.type || "Other").slice(0, 60), minutes: Number(c.minutes), notes: String(c.notes || "").slice(0, 200) });
+    stats.cardio++;
+  });
+
+  // Presets. Day tags already used by one of your presets are dropped so each day keeps one workout.
+  (Array.isArray(inc.templates) ? inc.templates : []).forEach(t => {
+    const exercises = t && typeof t.name === "string" && Array.isArray(t.exercises) && t.exercises.every(e => e && typeof e.name === "string") ? t.exercises : null;
+    if (!exercises) return void stats.skipped++;
+    const id = cleanId(t.id);
+    // Same preset already here? (same id, or the same name with the same exercises, like the starter presets)
+    const look = p => p.name.toLowerCase() + "|" + p.exercises.map(e => [e.name, e.sets, e.minReps || "", e.maxReps || ""].join(":")).join(",");
+    if (target.templates.some(x => x.id === id || look(x) === look(t))) return void stats.same++;
+    const sameName = target.templates.some(x => x.name.toLowerCase() === t.name.toLowerCase());
+    const taken = day => target.templates.some(x => (x.days || []).includes(day)) || target.cardioDays.includes(day);
+    target.templates.push({
+      id: id, name: sameName ? t.name.slice(0, 29) + " (imported)" : t.name.slice(0, 40),
+      days: (Array.isArray(t.days) ? t.days : []).filter(d => Number.isInteger(d) && d >= 0 && d <= 6 && !taken(d)),
+      exercises: exercises.map(e => ({ name: String(e.name).slice(0, 60), muscle: String(e.muscle || "Other").slice(0, 30), equipment: String(e.equipment || "Other").slice(0, 30),
+        sets: Math.min(10, Math.max(1, Number(e.sets) || 3)), minReps: Number(e.minReps) || null, maxReps: Number(e.maxReps) || null, superset: typeof e.superset === "string" ? e.superset.slice(0, 40) : null })),
+    });
+    stats.presets++;
+  });
+
+  // Your own exercises
+  (Array.isArray(inc.customExercises) ? inc.customExercises : []).forEach(x => {
+    if (!x || typeof x.name !== "string" || !x.name.trim()) return void stats.skipped++;
+    if ([...EXERCISES, ...target.customExercises].some(e => e.name.toLowerCase() === x.name.trim().toLowerCase())) return;
+    target.customExercises.push({ name: x.name.trim().slice(0, 40), muscle: String(x.muscle || "Other").slice(0, 30), equipment: String(x.equipment || "Other").slice(0, 30) });
+    stats.exercises++;
+  });
+  if (inc.presetsSeeded) target.presetsSeeded = true; // don't re-add the starter presets after importing yours
+  return stats;
+}
+
+function importSummary(s) {
+  const parts = [];
+  if (s.workouts) parts.push(s.workouts + (s.workouts === 1 ? " workout" : " workouts"));
+  if (s.cardio) parts.push(s.cardio + " cardio " + (s.cardio === 1 ? "entry" : "entries"));
+  if (s.presets) parts.push(s.presets + (s.presets === 1 ? " preset" : " presets"));
+  if (s.exercises) parts.push(s.exercises + " custom " + (s.exercises === 1 ? "exercise" : "exercises"));
+  return parts.join(", ");
+}
+
+async function importData(file) {
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) return toast("That file is too big to be a backup.");
+  let inc;
+  try {
+    inc = JSON.parse(await file.text());
+  } catch (e) {
+    return toast("That isn't a workout backup file.");
+  }
+  if (!inc || typeof inc !== "object" || Array.isArray(inc) || !["workouts", "sessions", "cardio", "templates"].some(k => k in inc)) {
+    return toast("That isn't a workout backup file.");
+  }
+
+  const copy = JSON.parse(JSON.stringify(data)); // try it on a copy first
+  const stats = mergeImport(inc, copy);
+  const found = importSummary(stats);
+  if (!found) return toast(stats.same ? "Nothing new: you already have all of it." : "Nothing to import in that file.");
+
+  const note = stats.same ? "\n\n" + stats.same + " already on this device, skipped." : "";
+  const ok = await askConfirm("Found " + found + " in this file. Add them to your data?\n\nNothing you already have is replaced or deleted." + note, "Import");
+  if (!ok) return;
+  Object.keys(copy).forEach(key => { data[key] = copy[key]; });
+  saveData();
+  toast("Imported " + found);
+  renderHistory();
+}
+
+screenHistory.addEventListener("click", e => {
+  if (e.target.id === "import-btn") document.getElementById("import-file").click();
+});
+
+screenHistory.addEventListener("change", e => {
+  if (e.target.id === "import-file") {
+    const file = e.target.files[0];
+    e.target.value = ""; // so choosing the same file again still works
+    importData(file);
   }
 });
