@@ -40,5 +40,7 @@ function sendCardioToHealth(id) {
   const c = data.cardio.find(x => x.id === id);
   if (!healthTypeFor(c.type)) return; // golf is already logged by 18Birdies
   const start = guessStart(c.date, c.minutes);
-  openShortcut({ type: healthTypeFor(c.type), minutes: c.minutes, start: start.toISOString(), name: c.type });
+  const payload = { type: healthTypeFor(c.type), minutes: c.minutes, start: start.toISOString(), name: c.type };
+  if (c.miles) payload.miles = c.miles; // lets the Shortcut log the distance too
+  openShortcut(payload);
 }

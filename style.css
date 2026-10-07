@@ -230,3 +230,15 @@ button.weekday { min-height: 0; min-width: 0; padding: 6px 0 5px; font: inherit;
 details .row button { font-size: 15px; padding: 0 6px; }
 .entry > div:first-child { flex: 1; min-width: 0; }
 .entry .btns { flex: none; width: 138px; }
+
+/* ---------- Cardio form: two boxes side by side ---------- */
+.two { display: flex; gap: 10px; }
+.two > div { flex: 1; min-width: 0; }
+
+/* ---------- Stats ---------- */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.stat { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.stat b { display: block; font-size: 28px; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: 15px; }
+svg rect.bar { fill: var(--blue); }
+svg rect.bar.now { fill: var(--green); }

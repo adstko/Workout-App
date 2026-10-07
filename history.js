@@ -2,6 +2,7 @@
 
 const screenHistory = document.getElementById("screen-history");
 let openWorkoutId = null; // a workout to show expanded (set when you finish one)
+let historyTab = "log";   // "log" (past workouts) or "stats"
 
 // Only count workouts where at least one set was finished (old and new flow together)
 function loggedWorkouts() {
@@ -9,11 +10,19 @@ function loggedWorkouts() {
 }
 
 function renderHistory() {
+  const tabs = `<h1>${historyTab === "stats" ? "Stats" : "History"}</h1><div class="row" style="margin-bottom:12px">
+      <button data-history-tab="log" class="${historyTab === "log" ? "on" : ""}">History</button>
+      <button data-history-tab="stats" class="${historyTab === "stats" ? "on" : ""}">Stats</button></div>`;
+  if (historyTab === "stats") {
+    screenHistory.innerHTML = tabs + statsHtml();
+    return;
+  }
+
   const logged = loggedWorkouts();
   const names = [...new Set(logged.flatMap(w => w.exercises
     .filter(ex => ex.sets.some(s => s.done)).map(ex => ex.name)))].sort();
 
-  let html = `<h1>History</h1><h2>Weight over time</h2>`;
+  let html = tabs + `<h2>Weight over time</h2>`;
   if (names.length === 0) {
     html += `<p class="muted">Finish a set on the Today tab and it will show up here.</p>`;
   } else {
@@ -46,7 +55,7 @@ function renderHistory() {
         <div>1. Open the <b>Shortcuts</b> app, tap <b>+</b> and name the shortcut exactly what is in the box above.<br>
         2. Add <b>Get Dictionary from Input</b>.<br>
         3. Add <b>Get Dictionary Value</b> three times, for the keys <b>type</b>, <b>minutes</b> and <b>start</b>.<br>
-        4. Add <b>Log Workout</b>. Set its <b>Type</b> to the <i>type</i> value, its <b>Duration</b> to the <i>minutes</i> value (in minutes), and its <b>Start Date</b> to the <i>start</i> value if your iPhone offers that option.<br>
+        4. Add <b>Log Workout</b>. Set its <b>Type</b> to the <i>type</i> value, its <b>Duration</b> to the <i>minutes</i> value (in minutes), and its <b>Start Date</b> to the <i>start</i> value if your iPhone offers that option. Cardio with miles also sends a <b>miles</b> value you can use for <b>Distance</b>.<br>
         5. Tap <b>Send to Apple Health</b> in this app. Allow Shortcuts to write to Health the first time.<br>
         If Type won't take a value, use <b>If</b> blocks instead, one per type, each with its own Log Workout.
         The button only works on an iPhone, and the page must be open in Safari from a normal web address.</div>
@@ -147,6 +156,8 @@ async function savePresetFromWorkout(id) {
 }
 
 screenHistory.addEventListener("click", e => {
+  const tab = e.target.closest("[data-history-tab]");
+  if (tab) { historyTab = tab.dataset.historyTab; renderHistory(); return; }
   if (e.target.id === "export-btn") exportData();
   else if (e.target.dataset.savePreset) savePresetFromWorkout(e.target.dataset.savePreset);
   else if (e.target.dataset.health) sendWorkoutToHealth(e.target.dataset.health);
@@ -220,7 +231,8 @@ function mergeImport(inc, target) {
     if (!c || !DATE_KEY.test(c.date) || !(Number(c.minutes) > 0)) return void stats.skipped++;
     const id = cleanId(c.id);
     if (target.cardio.some(x => x.id === id)) return void stats.same++;
-    target.cardio.push({ id: id, date: c.date, type: String(c.type || "Other").slice(0, 60), minutes: Number(c.minutes), notes: String(c.notes || "").slice(0, 200) });
+    target.cardio.push({ id: id, date: c.date, type: String(c.type || "Other").slice(0, 60), minutes: Number(c.minutes),
+      miles: Number(c.miles) > 0 ? Number(c.miles) : null, climb: Number(c.climb) > 0 ? Number(c.climb) : null, notes: String(c.notes || "").slice(0, 200) });
     stats.cardio++;
   });
 

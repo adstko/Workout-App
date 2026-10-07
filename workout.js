@@ -96,6 +96,7 @@ async function finishWorkout() {
   saveData();
   stopTimer();
   openWorkoutId = sessionId; // History opens this workout, with a "Save as preset" button
+  historyTab = "log";
   toast("Workout saved 💪");
   showScreen("history");
 
