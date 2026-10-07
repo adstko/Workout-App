@@ -45,11 +45,34 @@ function presetForDay(n) {
   return data.templates.find(p => (p.days || []).includes(n));
 }
 
-// Schedule a preset on a weekday (or make it a rest day with id ""). One preset per day.
-function setDaySchedule(n, id) {
+// What a weekday shows in the week bar: its preset, "Cardio" or "Rest"
+function scheduleLabel(n) {
+  const p = presetForDay(n);
+  return p ? p.name : data.cardioDays.includes(n) ? "Cardio" : "Rest";
+}
+
+// Schedule a weekday: value is a preset id, "cardio" for a cardio day, or "" for a rest day. One thing per day.
+function setDaySchedule(n, value) {
   data.templates.forEach(p => { p.days = (p.days || []).filter(d => d !== n); });
-  const p = data.templates.find(t => t.id === id);
+  data.cardioDays = data.cardioDays.filter(d => d !== n);
+  if (value === "cardio") data.cardioDays.push(n);
+  const p = data.templates.find(t => t.id === value);
   if (p) p.days.push(n);
+  // Days from today on that were only opened (nothing logged) are redrawn from the new schedule
+  Object.keys(data.workouts).forEach(key => {
+    const w = data.workouts[key];
+    if (key >= todayKey() && new Date(key + "T00:00:00").getDay() === n && !w.exercises.some(ex => ex.sets.some(s => s.done))) {
+      delete data.workouts[key];
+    }
+  });
+  saveData();
+}
+
+// One-time change: Saturday and Sunday become rest days. Your logged workouts are not touched.
+function applyWeekendRest() {
+  if (data.weekendsRestDone) return;
+  [0, 6].forEach(n => setDaySchedule(n, ""));
+  data.weekendsRestDone = true;
   saveData();
 }
 
@@ -103,12 +126,14 @@ function renderWorkouts() {
     <h2>Weekly schedule</h2>
     <div class="card">${WEEK.map(([label, n]) => {
       const current = presetForDay(n);
+      const cardio = !current && data.cardioDays.includes(n);
       return `<div class="sched-row"><b>${label}</b><select data-sched="${n}" aria-label="${label} workout">
         <option value="">Rest day</option>
+        <option value="cardio" ${cardio ? "selected" : ""}>Cardio day</option>
         ${data.templates.map(p => `<option value="${p.id}" ${current && current.id === p.id ? "selected" : ""}>${esc(p.name)}</option>`).join("")}
       </select></div>`;
     }).join("")}
-      <p class="muted">Pick what you do each day. It shows in the week strip and on the Today screen.</p></div>
+      <p class="muted">Pick what you do each day: a preset, a cardio day or a rest day. It shows in the week bar and on the Today screen.</p></div>
     <h2>Presets (templates)</h2>`;
 
   if (data.templates.length === 0) {

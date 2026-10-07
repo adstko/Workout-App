@@ -39,7 +39,7 @@ const PLAN = {
 const TIMED = ["Plank", "Side plank"];
 
 // Which day to show by default. getDay(): Sunday = 0 ... Saturday = 6
-const DEFAULT_DAYS = ["Legs", "Push", "Pull", "Legs", "Cardio", "Push", "Pull"];
+const DEFAULT_DAYS = ["Rest", "Push", "Pull", "Legs", "Cardio", "Push", "Rest"]; // Sat and Sun are rest days
 
 const CARDIO_TYPES = ["Incline walk", "Bike", "Jog", "Intervals (8 x 30s hard / 90s easy)", "Golf", "Long walk", "Other"];
 
@@ -52,10 +52,10 @@ const DEFAULT_PRESETS = [
   { name: "Push", days: [1, 5], exercises: [
     ["Bench press", 4, 6, 8], ["Incline dumbbell press", 3, 8, 10], ["Shoulder press", 3, 8, 10],
     ["Lateral raises", 3, 12, 15], ["Triceps pushdowns", 3, 10, 12], ["Pec fly machine", 2, 12, 12] ] },
-  { name: "Pull", days: [2, 6], exercises: [
+  { name: "Pull", days: [2], exercises: [
     ["Lat pulldown", 4, 6, 10], ["Seated cable row", 3, 8, 10], ["Dumbbell row", 3, 10, 10],
     ["Face pulls", 3, 12, 15], ["Curls", 3, 10, 12], ["Hammer curls", 2, 12, 12] ] },
-  { name: "Legs", days: [3, 0], exercises: [
+  { name: "Legs", days: [3], exercises: [
     ["Squat", 4, 6, 8], ["Romanian deadlift", 3, 8, 10], ["Leg press", 3, 10, 12],
     ["Leg curl", 3, 10, 12], ["Calf raises", 4, 12, 15], ["Plank", 3, null, null] ] },
 ];

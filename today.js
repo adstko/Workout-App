@@ -34,11 +34,21 @@ function buildWorkout(day, date) {
   return { day: day, exercises: PLAN[day].map(def => buildExercise(def, def.options[0], date)) };
 }
 
+// Which Push/Pull/Legs/Cardio/Rest day a date starts as: whatever the weekly schedule says
+function defaultDayFor(date) {
+  const n = new Date(date + "T00:00:00").getDay();
+  const preset = presetForDay(n);
+  if (preset) {
+    const match = Object.keys(PLAN).find(k => k.toLowerCase() === preset.name.toLowerCase());
+    return match || "Rest"; // a preset with its own name is shown by the preset card at the top
+  }
+  return data.cardioDays.includes(n) ? "Cardio" : "Rest";
+}
+
 // Get (or create) the workout for a date
 function getWorkout(date) {
   if (!data.workouts[date]) {
-    const weekday = new Date(date + "T00:00:00").getDay();
-    data.workouts[date] = buildWorkout(DEFAULT_DAYS[weekday], date);
+    data.workouts[date] = buildWorkout(defaultDayFor(date), date);
     saveData();
   }
   return data.workouts[date];
@@ -76,16 +86,14 @@ function renderWeek() {
   for (let i = 0; i < 7; i++) {
     const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - sinceMonday + i);
     const key = dateKey(date);
-    const preset = presetForDay(date.getDay());
     html += `<button class="weekday ${didTrain(key) ? "trained" : ""} ${key === todayKey() ? "today" : ""} ${key === viewDate() ? "selected" : ""}" data-daykey="${key}">
-      ${WEEK[i][0]}<b>${date.getDate()}${didTrain(key) ? '<span class="ck">✓</span>' : ""}</b><small>${preset ? esc(preset.name) : "Rest"}</small></button>`;
+      ${WEEK[i][0]}<b>${date.getDate()}${didTrain(key) ? '<span class="ck">✓</span>' : ""}</b><small>${esc(scheduleLabel(date.getDay()))}</small></button>`;
   }
   document.getElementById("week").innerHTML = html;
 }
 
 function dayNote(day) {
   const weekday = new Date(viewDate() + "T00:00:00").getDay();
-  if (weekday === 0 && day === "Legs") return "Sunday: Legs or rest. Your call. Tap Rest if you're beat.";
   if (day === "Cardio") return "Rest + cardio day. 20-30 min easy cardio, or the interval day: 8 rounds of 30 sec hard / 90 sec easy. Log it on the Cardio tab.";
   if (day === "Rest") return "Rest day. Recovery is when you grow. A walk or golf is great. Log it on the Cardio tab.";
   if (weekday === 6) return "Weekend tip: golf or a long walk counts as cardio too.";
@@ -159,7 +167,9 @@ function renderToday() {
   const w = getWorkout(date);
   const label = new Date(date + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
-  let html = `<h1>${w.day} Day</h1><p class="muted">${label}</p>${todaysPresetsHtml()}<div id="week"></div>`;
+  const scheduled = presetForDay(new Date(date + "T00:00:00").getDay());
+  const title = w.day === "Rest" && scheduled ? scheduled.name : w.day; // e.g. a preset called "Upper A"
+  let html = `<h1>${esc(title)} Day</h1><p class="muted">${label}</p>${todaysPresetsHtml()}<div id="week"></div>`;
 
   html += `<div class="row days">` + ["Push", "Pull", "Legs", "Cardio", "Rest"]
     .map(d => `<button data-day="${d}" class="${d === w.day ? "on" : ""}">${d}</button>`).join("") + `</div>`;
@@ -193,7 +203,21 @@ screenToday.addEventListener("click", async e => {
   if (dayBtn) {
     const anyDone = w.exercises.some(ex => ex.sets.some(s => s.done));
     if (anyDone && !(await askConfirm("Switching days clears today's logged sets. Continue?", "Switch"))) return;
-    data.workouts[viewDate()] = buildWorkout(dayBtn.dataset.day, viewDate());
+    const chosen = dayBtn.dataset.day;
+    // Today and later days: the schedule for that weekday changes too, so the week bar, the preset
+    // card and the Weekly schedule all agree. (Past days only change that one day's workout.)
+    if (viewDate() >= todayKey()) {
+      const n = new Date(viewDate() + "T00:00:00").getDay();
+      const dayName = new Date(viewDate() + "T00:00:00").toLocaleDateString(undefined, { weekday: "long" });
+      const preset = data.templates.find(t => t.name.toLowerCase() === chosen.toLowerCase());
+      if (chosen === "Cardio" || chosen === "Rest" || preset) {
+        setDaySchedule(n, chosen === "Cardio" ? "cardio" : chosen === "Rest" ? "" : preset.id);
+        toast(dayName + "s are now " + chosen);
+      } else {
+        toast("No preset called " + chosen + ", so the schedule stays the same.");
+      }
+    }
+    data.workouts[viewDate()] = buildWorkout(chosen, viewDate());
     saveData();
     renderToday();
     return;

@@ -9,6 +9,7 @@
 //   templates: [ { id, name, days: [1, 5], exercises: [ { name, muscle, equipment, sets, minReps, maxReps, superset } ] } ],
 //              ^ these are your "presets". Old templates without days/minReps/maxReps still work.
 //   presetsSeeded: true once the starter presets have been offered (so deleting them keeps them deleted)
+//   cardioDays: [4]  weekdays that are scheduled as cardio days (a weekday with no preset is a rest day)
 //   customExercises: [ { name, muscle, equipment } ], customRest: 30
 // }
 
@@ -26,6 +27,8 @@ function loadData() {
     customExercises: [],   // exercises you added yourself
     customRest: 30,        // rest timer (seconds) for the "+" flow
     shortcutName: "Log Workout to Health", // the iOS Shortcut that logs to Apple Health
+    cardioDays: [4],       // weekdays scheduled as "Cardio day" (0 = Sunday ... 6 = Saturday). Thursday to start.
+    weekendsRestDone: false, // the one-time "make Sat and Sun rest days" change has been applied
   };
   try {
     return Object.assign(empty, JSON.parse(localStorage.getItem(STORAGE_KEY)));

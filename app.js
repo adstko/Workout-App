@@ -50,4 +50,5 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) chec
 setInterval(checkNewDay, 60000);
 
 seedPresets(); // add the starter presets on first launch
+applyWeekendRest(); // one-time: Saturday and Sunday become rest days
 showScreen("today");
