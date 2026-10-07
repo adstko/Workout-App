@@ -252,6 +252,7 @@ screenToday.addEventListener("click", async e => {
     }
     set.done = !set.done;
     saveData();
+    queueOnlineSync();
     row.classList.toggle("done", set.done);
     renderWeek();
     if (set.done) startTimer();

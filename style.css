@@ -242,3 +242,17 @@ details .row button { font-size: 15px; padding: 0 6px; }
 .stat span { color: var(--muted); font-size: 15px; }
 svg rect.bar { fill: var(--blue); }
 svg rect.bar.now { fill: var(--green); }
+
+/* ---------- Friends: leaderboard + feed ---------- */
+.board-row { display: flex; align-items: center; gap: 12px; padding: 12px; margin: 8px 0; background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+.board-row.me { border-color: var(--green); }
+.board-row .rank { font-size: 22px; font-weight: 800; width: 28px; text-align: center; color: var(--muted); }
+.board-row .who { flex: 1; min-width: 0; }
+.board-row .who b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board-row .bar { height: 8px; background: #242935; border-radius: 4px; margin-top: 6px; overflow: hidden; }
+.board-row .bar i { display: block; height: 100%; background: var(--blue); border-radius: 4px; }
+.board-row.me .bar i { background: var(--green); }
+.board-row .val { font-size: 20px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.board-row .val small { font-size: 13px; color: var(--muted); font-weight: 400; }
+.feed-list { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; font-size: 16px; }
+.row.grid2 button { flex: 1 1 calc(50% - 4px); }

@@ -2,7 +2,7 @@
 
 const screenHistory = document.getElementById("screen-history");
 let openWorkoutId = null; // a workout to show expanded (set when you finish one)
-let historyTab = "log";   // "log" (past workouts) or "stats"
+let historyTab = "log";   // "log" (past workouts), "stats" or "friends"
 
 // Only count workouts where at least one set was finished (old and new flow together)
 function loggedWorkouts() {
@@ -10,11 +10,18 @@ function loggedWorkouts() {
 }
 
 function renderHistory() {
-  const tabs = `<h1>${historyTab === "stats" ? "Stats" : "History"}</h1><div class="row" style="margin-bottom:12px">
+  const titles = { log: "History", stats: "Stats", friends: "Friends" };
+  const tabs = `<h1>${titles[historyTab]}</h1><div class="row" style="margin-bottom:12px">
       <button data-history-tab="log" class="${historyTab === "log" ? "on" : ""}">History</button>
-      <button data-history-tab="stats" class="${historyTab === "stats" ? "on" : ""}">Stats</button></div>`;
+      <button data-history-tab="stats" class="${historyTab === "stats" ? "on" : ""}">Stats</button>
+      <button data-history-tab="friends" class="${historyTab === "friends" ? "on" : ""}">Friends</button></div>`;
   if (historyTab === "stats") {
     screenHistory.innerHTML = tabs + statsHtml();
+    return;
+  }
+  if (historyTab === "friends") {
+    screenHistory.innerHTML = tabs + friendsHtml();
+    ensureFriendsLoaded();
     return;
   }
 
@@ -41,7 +48,8 @@ function renderHistory() {
       html += `<div><b>${esc(ex.name)}</b><br>${text}</div>`;
     });
     html += `<div class="row" style="margin-top:10px"><button data-health="${w.id}">Send to Apple Health</button>
-      <button data-save-preset="${w.id}">Save as preset</button></div></details>`;
+      <button data-save-preset="${w.id}">Save as preset</button>
+      ${signedIn() ? `<button data-share-workout="${esc(w.id)}">Share</button>` : ""}</div></details>`;
   });
   openWorkoutId = null;
   if (logged.length === 0) html += `<p class="muted">No workouts yet.</p>`;
@@ -298,6 +306,7 @@ async function importData(file) {
   if (!ok) return;
   Object.keys(copy).forEach(key => { data[key] = copy[key]; });
   saveData();
+  queueOnlineSync();
   toast("Imported " + found);
   renderHistory();
 }

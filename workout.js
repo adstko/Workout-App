@@ -80,14 +80,15 @@ async function finishWorkout() {
     return;
   }
   const sessionId = uid();
-  data.sessions.push({
+  const finishedSession = {
     id: sessionId,
     date: dateKey(new Date(a.startedAt)),
     name: a.name.trim() || "Workout",
     startedAt: a.startedAt,
     minutes: Math.max(1, Math.round((Date.now() - a.startedAt) / 60000)),
     exercises: finished,
-  });
+  };
+  data.sessions.push(finishedSession);
   // Did you change the preset's workout (added, removed, swapped exercises, or changed sets)?
   const preset = a.presetId && data.templates.find(t => t.id === a.presetId);
   const changed = preset && presetChanged(preset, a.exercises);
@@ -95,6 +96,8 @@ async function finishWorkout() {
   data.active = null;
   saveData();
   stopTimer();
+  onWorkoutFinished(finishedSession); // shares it with friends if you turned that on
+  queueOnlineSync();                  // and updates your weekly totals
   openWorkoutId = sessionId; // History opens this workout, with a "Save as preset" button
   historyTab = "log";
   toast("Workout saved 💪");

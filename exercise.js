@@ -128,6 +128,7 @@ screenExercise.addEventListener("click", async e => {
     if (!s.done && s.reps === "") { row.querySelector('[data-field="reps"]').focus(); return; } // need reps first
     s.done = !s.done;
     saveData();
+    queueOnlineSync();
     row.classList.toggle("done", s.done);
     if (s.done) startTimer(data.customRest);
   }

@@ -57,6 +57,7 @@ screenCardio.addEventListener("submit", e => {
     notes: form.notes.value.trim(),
   });
   saveData();
+  queueOnlineSync();
   renderCardio();
 });
 
@@ -67,6 +68,7 @@ screenCardio.addEventListener("click", async e => {
   if (btn && await askConfirm("Delete this cardio entry?", "Delete")) {
     data.cardio = data.cardio.filter(c => c.id !== btn.dataset.delete);
     saveData();
+    queueOnlineSync();
     renderCardio();
   }
 });

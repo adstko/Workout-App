@@ -52,3 +52,4 @@ setInterval(checkNewDay, 60000);
 seedPresets(); // add the starter presets on first launch
 applyWeekendRest(); // one-time: Saturday and Sunday become rest days
 showScreen("today");
+queueOnlineSync(); // signed in? send your latest totals
