@@ -2,6 +2,17 @@
 
 const screenCardio = document.getElementById("screen-cardio");
 
+// "Today", "Yesterday", then the days before (the last 60 days), as dropdown options
+function dateChoices() {
+  const now = new Date();
+  let html = "";
+  for (let i = 0; i < 60; i++) {
+    const key = dateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - i));
+    html += `<option value="${key}">${i === 0 ? "Today" : i === 1 ? "Yesterday" : prettyDate(key)}</option>`;
+  }
+  return html;
+}
+
 function renderCardio() {
   let html = `<h1>Cardio</h1>
     <div class="card muted">
@@ -12,7 +23,7 @@ function renderCardio() {
 
     <form id="cardio-form" class="card">
       <label>Date</label>
-      <input type="date" name="date" value="${todayKey()}" required>
+      <select name="date">${dateChoices()}</select>
       <label>Type</label>
       <select name="type">${CARDIO_TYPES.map(t => `<option>${esc(t)}</option>`).join("")}</select>
       <label>Minutes</label>
