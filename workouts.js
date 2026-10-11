@@ -48,7 +48,7 @@ function presetForDay(n) {
 // What a weekday shows in the week bar: its preset, "Cardio" or "Rest"
 function scheduleLabel(n) {
   const p = presetForDay(n);
-  return p ? p.name : data.cardioDays.includes(n) ? "Cardio" : "Rest";
+  return p ? (p.short || p.name) : data.cardioDays.includes(n) ? "Cardio" : "Rest";
 }
 
 // Schedule a weekday: value is a preset id, "cardio" for a cardio day, or "" for a rest day. One thing per day.
@@ -114,7 +114,7 @@ function unlinkSuperset(ex, list) {
 function renderWorkouts() {
   if (draft) return renderPresetEditor();
 
-  let html = `<h1>Workouts</h1>`;
+  let html = `<h1>Workouts</h1>` + guidedBannerHtml();
   if (data.active) {
     html += `<div class="card"><b>Workout in progress</b><br>
       <span class="muted">${esc(data.active.name)} · ${data.active.exercises.length} exercises</span>
@@ -122,7 +122,8 @@ function renderWorkouts() {
   }
   html += `<div class="stack">
       <button class="big primary" id="wk-new">+ New preset</button>
-      <button class="big" id="wk-empty">Start empty workout</button></div>
+      <button class="big" id="wk-empty">Start empty workout</button>
+      <button class="big" id="wk-tips">Recomp tips</button></div>
     <h2>Weekly schedule</h2>
     <div class="card">${WEEK.map(([label, n]) => {
       const current = presetForDay(n);
@@ -133,7 +134,9 @@ function renderWorkouts() {
         ${data.templates.map(p => `<option value="${p.id}" ${current && current.id === p.id ? "selected" : ""}>${esc(p.name)}</option>`).join("")}
       </select></div>`;
     }).join("")}
-      <p class="muted">Pick what you do each day: a preset, a cardio day or a rest day. It shows in the week bar and on the Today screen.</p></div>
+      <p class="muted">Pick what you do each day: a preset, a cardio day or a rest day. It shows in the week bar and on the Today screen.</p>
+      <button class="big" id="wk-recomp-week">Use Recomp Week</button>
+      <p class="muted">Mon Full Body A · Tue Intervals · Wed rest · Thu Full Body B · Fri Circuit · Sat Easy Cardio + Core · Sun rest. This replaces your current week. Your presets and logs stay.</p></div>
     <h2>Presets (templates)</h2>`;
 
   if (data.templates.length === 0) {
@@ -143,7 +146,7 @@ function renderWorkouts() {
     const days = (p.days || []).slice().sort((a, b) => (a || 7) - (b || 7)).map(d => `<span class="tag day">${dayLabel(d)}</span>`).join(" ");
     html += `<div class="card">
       <b>${esc(p.name)}</b> ${days}<br>
-      <span class="muted">${p.exercises.length} ${p.exercises.length === 1 ? "exercise" : "exercises"} · ${esc(presetMuscles(p).join(", "))}</span>
+      <span class="muted">${esc(presetSummary(p))}</span>
       <div class="row" style="margin-top:10px">
         <button class="primary" data-start="${p.id}">Start</button>
         <button data-edit="${p.id}">Edit</button>
@@ -151,7 +154,8 @@ function renderWorkouts() {
         <button class="danger" data-delete="${p.id}">Delete</button>
       </div></div>`;
   });
-  html += `<button class="big" id="wk-starter" style="margin-top:14px">Add starter presets (Push / Pull / Legs)</button>`;
+  html += `<div class="stack" style="margin-top:14px"><button class="big" id="wk-starter">Add starter presets (Push / Pull / Legs)</button>
+    <button class="big" id="wk-recomp-add">Add Recomp presets</button></div>`;
   screenWorkouts.innerHTML = html;
 }
 
@@ -159,11 +163,13 @@ function renderWorkouts() {
 // Weight and reps are pre-filled from the last time you did each exercise (makeExercise).
 async function startPreset(id) {
   const p = data.templates.find(t => t.id === id);
+  if (p.kind && p.kind !== "strength") return startGuided(id); // circuit, intervals, easy cardio + core
   if (data.active && !(await askConfirm("You already have a workout in progress. Replace it with this preset?", "Replace"))) return;
   data.active = {
     name: p.name,
     startedAt: Date.now(),
     presetId: p.id, // so we can offer to update the preset after you finish
+    finisher: p.finisher || null, // e.g. "10 min easy incline walk"
     exercises: p.exercises.map(item => makeExercise(item, item.sets)),
   };
   saveData();
@@ -181,14 +187,22 @@ function renderPresetEditor() {
     <div class="chips" id="tpl-days">${WEEK.map(([label, n]) =>
       `<button data-day="${n}" class="${draft.days.includes(n) ? "on" : ""}">${label}</button>`).join("")}</div>
     <p class="muted">Tagged presets show up on the Today screen on those days.</p>
+    <label for="tpl-about">About how long (minutes)</label>
+    <input id="tpl-about" type="number" inputmode="numeric" min="5" max="180" placeholder="e.g. 45" value="${draft.about || ""}">`;
+
+  const strength = !draft.kind || draft.kind === "strength";
+  if (!strength) html += timerEditorHtml();
+  else html += `<label for="tpl-finisher">Finish with (optional)</label>
+    <input id="tpl-finisher" type="text" maxlength="60" placeholder="e.g. 10 min easy incline walk" value="${esc(draft.finisher ? draft.finisher.text : "")}">
     <h2>Exercises</h2>`;
 
-  if (draft.exercises.length === 0) html += `<p class="muted">No exercises yet. Tap "Add exercise".</p>`;
+  if (strength && draft.exercises.length === 0) html += `<p class="muted">No exercises yet. Tap "Add exercise".</p>`;
 
   draft.exercises.forEach((ex, i) => {
     const timed = TIMED.includes(ex.name);
     const repsRow = timed
-      ? `<p class="muted">Timed: hold with good form (no rep range).</p>`
+      ? `<div class="reps-row"><span class="muted">Seconds</span>
+          <input type="number" inputmode="numeric" min="10" max="300" placeholder="e.g. 40" aria-label="Seconds to hold" data-i="${i}" data-sec="1" value="${ex.seconds || ""}"></div>`
       : `<div class="reps-row"><span class="muted">Reps</span>
           <input type="number" inputmode="numeric" min="1" max="100" placeholder="min" aria-label="Minimum reps" data-i="${i}" data-rep="minReps"
             value="${ex.minReps || ""}" class="${repsOutOfRange(ex.name, ex.minReps || "") ? "warn" : ""}">
@@ -209,22 +223,46 @@ function renderPresetEditor() {
         <button data-plus="${i}" aria-label="More sets">+</button>
       </div>
       ${repsRow}
+      ${timed ? "" : `<button class="${ex.failureLast ? "on" : ""}" style="width:100%;margin-top:8px" data-failure-last="${i}">Last set to failure: ${ex.failureLast ? "On" : "Off"}</button>`}
       ${i < draft.exercises.length - 1 ? `<button class="${linkedNext ? "on" : ""}" style="width:100%;margin-top:8px" data-link="${i}">${linkedNext ? "Super Set with next ✓" : "Super Set with next"}</button>` : ""}
     </div>`;
   });
 
   html += `<p class="muted">Keep reps between 6 and 15. Weight isn't saved in a preset: you fill it in during the workout.</p>
     <div class="stack" style="margin-top:14px">
-      <button class="big" id="tpl-add">Add exercise</button>
+      ${strength ? '<button class="big" id="tpl-add">Add exercise</button>' : ""}
       <button class="big primary" id="tpl-save">Save preset</button></div>`;
   screenWorkouts.innerHTML = html;
 }
 
+// Numbers behind the guided timers: [key, label, min, max, multiplier (minutes are stored as seconds)]
+const PLAN_FIELDS = {
+  circuit: [["rounds", "Rounds", 1, 10, 1], ["restSeconds", "Rest between rounds (sec)", 15, 180, 1]],
+  intervals: [["warmup", "Warm-up (min)", 0, 15, 60], ["rounds", "Rounds", 1, 20, 1], ["hard", "Hard (sec)", 10, 120, 1], ["easy", "Easy (sec)", 20, 300, 1], ["cooldown", "Cool-down (min)", 0, 15, 60]],
+  cardio: [["minutes", "Easy cardio (minutes)", 5, 90, 1]],
+};
+
+function timerEditorHtml() {
+  const fields = PLAN_FIELDS[draft.kind] || [];
+  const plan = draft.plan || {};
+  return `<h2>Steps</h2>
+    <label for="tpl-steps">One step per line</label>
+    <textarea id="tpl-steps" maxlength="800">${esc((draft.steps || []).join("\n"))}</textarea>
+    <div class="card stack"><b>Timer settings</b>${fields.map(([key, label, min, max, mult]) =>
+      `<div><label>${label}</label><input type="number" inputmode="numeric" min="${min}" max="${max}" data-plan="${key}" data-mult="${mult}" value="${plan[key] !== undefined ? plan[key] / mult : ""}"></div>`).join("")}</div>`;
+}
+
 function savePreset() {
   if (!draft.name.trim()) return toast("Give the preset a name first.");
-  if (draft.exercises.length === 0) return toast("Add at least one exercise.");
+  const strength = !draft.kind || draft.kind === "strength";
+  if (strength && draft.exercises.length === 0) return toast("Add at least one exercise.");
+  if (!strength && !(draft.steps && draft.steps.length)) return toast("Add at least one step.");
+  draft.about = draft.about ? Math.min(180, Math.max(5, Math.round(draft.about))) : null;
+  (PLAN_FIELDS[draft.kind] || []).forEach(([key, , min, max, mult]) => { // keep the timer numbers in a sensible range
+    if (draft.plan && draft.plan[key] !== undefined) draft.plan[key] = Math.min(max * mult, Math.max(min * mult, Math.round(draft.plan[key])));
+  });
   for (const ex of draft.exercises) {
-    if (TIMED.includes(ex.name)) { ex.minReps = ex.maxReps = null; continue; }
+    if (TIMED.includes(ex.name)) { ex.minReps = ex.maxReps = null; if (ex.seconds) ex.seconds = Math.min(300, Math.max(10, Math.round(ex.seconds))); continue; }
     if (!ex.minReps && ex.maxReps) ex.minReps = ex.maxReps; // only one box filled: use it for both
     if (!ex.maxReps && ex.minReps) ex.maxReps = ex.minReps;
     if (ex.minReps > ex.maxReps) return toast(ex.name + ": min reps is higher than max reps.");
@@ -258,6 +296,18 @@ screenWorkouts.addEventListener("click", async e => {
   if (!btn) return;
 
   if (btn.id === "wk-resume") showScreen("workout");
+  else if (btn.id === "wk-tips") showScreen("tips");
+  else if (btn.id === "wk-recomp-week") {
+    if (!(await askConfirm("Fill your week with the Recomp Week? This replaces your current weekly schedule. Your presets and logs stay.", "Use Recomp Week"))) return;
+    applyRecompWeek();
+    toast("Recomp Week is set.");
+    renderWorkouts();
+  }
+  else if (btn.id === "wk-recomp-add") {
+    const added = addRecompPresets();
+    toast(added.length ? "Added " + added.length + " Recomp " + (added.length === 1 ? "preset" : "presets") + "." : "The Recomp presets are already there.");
+    renderWorkouts();
+  }
   else if (btn.id === "wk-starter") { addStarterPresets(); renderWorkouts(); }
   else if (btn.id === "wk-empty") startWorkout();
   else if (btn.id === "wk-new") { draft = { id: uid(), name: "", days: [], exercises: [] }; renderWorkouts(); }
@@ -300,6 +350,7 @@ screenWorkouts.addEventListener("click", async e => {
     unlinkSuperset(gone, draft.exercises); // its partner is alone now
     renderWorkouts();
   }
+  else if (btn.dataset.failureLast) { const ex = draft.exercises[Number(btn.dataset.failureLast)]; ex.failureLast = !ex.failureLast; renderWorkouts(); }
   else if (btn.dataset.link) {
     const i = Number(btn.dataset.link);
     const a = draft.exercises[i], b = draft.exercises[i + 1];
@@ -314,6 +365,17 @@ screenWorkouts.addEventListener("click", async e => {
 screenWorkouts.addEventListener("input", e => {
   if (!draft) return;
   if (e.target.id === "tpl-name") draft.name = e.target.value;
+  else if (e.target.id === "tpl-about") draft.about = e.target.value ? Number(e.target.value) : null;
+  else if (e.target.id === "tpl-finisher") {
+    const text = e.target.value.trim();
+    draft.finisher = text ? Object.assign({ type: "Incline walk", minutes: 10 }, draft.finisher || {}, { text: text }) : null;
+  }
+  else if (e.target.id === "tpl-steps") draft.steps = e.target.value.split("\n").map(s => s.trim()).filter(Boolean).slice(0, 12);
+  else if (e.target.dataset.plan) {
+    draft.plan = draft.plan || {};
+    draft.plan[e.target.dataset.plan] = Number(e.target.value) * Number(e.target.dataset.mult || 1);
+  }
+  else if (e.target.dataset.sec) draft.exercises[Number(e.target.dataset.i)].seconds = e.target.value ? Number(e.target.value) : null;
   else if (e.target.dataset.rep) {
     const ex = draft.exercises[Number(e.target.dataset.i)];
     ex[e.target.dataset.rep] = e.target.value === "" ? null : Number(e.target.value);

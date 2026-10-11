@@ -10,10 +10,10 @@ function loggedWorkouts() {
 }
 
 function renderHistory() {
-  const titles = { log: "History", stats: "Stats", friends: "Friends" };
+  const titles = { log: "History", stats: "Progress", friends: "Friends" };
   const tabs = `<h1>${titles[historyTab]}</h1><div class="row" style="margin-bottom:12px">
       <button data-history-tab="log" class="${historyTab === "log" ? "on" : ""}">History</button>
-      <button data-history-tab="stats" class="${historyTab === "stats" ? "on" : ""}">Stats</button>
+      <button data-history-tab="stats" class="${historyTab === "stats" ? "on" : ""}">Progress</button>
       <button data-history-tab="friends" class="${historyTab === "friends" ? "on" : ""}">Friends</button></div>`;
   if (historyTab === "stats") {
     screenHistory.innerHTML = tabs + statsHtml();
@@ -240,7 +240,8 @@ function mergeImport(inc, target) {
     const id = cleanId(c.id);
     if (target.cardio.some(x => x.id === id)) return void stats.same++;
     target.cardio.push({ id: id, date: c.date, type: String(c.type || "Other").slice(0, 60), minutes: Number(c.minutes),
-      miles: Number(c.miles) > 0 ? Number(c.miles) : null, floors: Number(c.floors) > 0 ? Math.round(Number(c.floors)) : null, climb: Number(c.climb) > 0 ? Number(c.climb) : null, notes: String(c.notes || "").slice(0, 200) });
+      miles: Number(c.miles) > 0 ? Number(c.miles) : null, floors: Number(c.floors) > 0 ? Math.round(Number(c.floors)) : null, climb: Number(c.climb) > 0 ? Number(c.climb) : null,
+      effort: Number(c.effort) >= 1 && Number(c.effort) <= 10 ? Math.round(Number(c.effort)) : null, presetName: c.presetName ? String(c.presetName).slice(0, 40) : undefined, notes: String(c.notes || "").slice(0, 200) });
     stats.cardio++;
   });
 
@@ -254,12 +255,33 @@ function mergeImport(inc, target) {
     if (target.templates.some(x => x.id === id || look(x) === look(t))) return void stats.same++;
     const sameName = target.templates.some(x => x.name.toLowerCase() === t.name.toLowerCase());
     const taken = day => target.templates.some(x => (x.days || []).includes(day)) || target.cardioDays.includes(day);
-    target.templates.push({
+    const text = (v, n) => String(v).slice(0, n);
+    const num = (v, lo, hi) => Math.min(hi, Math.max(lo, Math.round(Number(v) || 0)));
+    const preset = {
       id: id, name: sameName ? t.name.slice(0, 29) + " (imported)" : t.name.slice(0, 40),
       days: (Array.isArray(t.days) ? t.days : []).filter(d => Number.isInteger(d) && d >= 0 && d <= 6 && !taken(d)),
-      exercises: exercises.map(e => ({ name: String(e.name).slice(0, 60), muscle: String(e.muscle || "Other").slice(0, 30), equipment: String(e.equipment || "Other").slice(0, 30),
-        sets: Math.min(10, Math.max(1, Number(e.sets) || 3)), minReps: Number(e.minReps) || null, maxReps: Number(e.maxReps) || null, superset: typeof e.superset === "string" ? e.superset.slice(0, 40) : null })),
-    });
+      exercises: exercises.map(e => {
+        const ex = { name: text(e.name, 60), muscle: text(e.muscle || "Other", 30), equipment: text(e.equipment || "Other", 30),
+          sets: Math.min(10, Math.max(1, Number(e.sets) || 3)), minReps: Number(e.minReps) || null, maxReps: Number(e.maxReps) || null,
+          superset: typeof e.superset === "string" ? e.superset.slice(0, 40) : null };
+        if (Number(e.seconds) > 0) ex.seconds = num(e.seconds, 10, 300);
+        if (e.failureLast) ex.failureLast = true;
+        if (e.note) ex.note = text(e.note, 120);
+        return ex;
+      }),
+    };
+    if (["strength", "circuit", "intervals", "cardio"].includes(t.kind)) preset.kind = t.kind;
+    if (Number(t.about) > 0) preset.about = num(t.about, 5, 180);
+    if (t.short) preset.short = text(t.short, 12);
+    if (t.cardioType && CARDIO_TYPES.includes(t.cardioType)) preset.cardioType = t.cardioType;
+    if (t.finisher && t.finisher.text) preset.finisher = { text: text(t.finisher.text, 60), type: CARDIO_TYPES.includes(t.finisher.type) ? t.finisher.type : "Incline walk", minutes: num(t.finisher.minutes || 10, 1, 120) };
+    if (Array.isArray(t.steps)) preset.steps = t.steps.slice(0, 12).map(s => text(s, 120));
+    if (t.plan && typeof t.plan === "object") {
+      preset.plan = {};
+      ["rounds", "restSeconds", "warmup", "hard", "easy", "cooldown", "minutes", "coreSets"].forEach(k => { if (Number(t.plan[k]) >= 0 && t.plan[k] !== undefined) preset.plan[k] = num(t.plan[k], 0, 7200); });
+      if (Array.isArray(t.plan.core)) preset.plan.core = t.plan.core.slice(0, 6).map(s => text(s, 40));
+    }
+    target.templates.push(preset);
     stats.presets++;
   });
 
@@ -269,6 +291,13 @@ function mergeImport(inc, target) {
     if ([...EXERCISES, ...target.customExercises].some(e => e.name.toLowerCase() === x.name.trim().toLowerCase())) return;
     target.customExercises.push({ name: x.name.trim().slice(0, 40), muscle: String(x.muscle || "Other").slice(0, 30), equipment: String(x.equipment || "Other").slice(0, 30) });
     stats.exercises++;
+  });
+  (Array.isArray(inc.measurements) ? inc.measurements : []).forEach(m => {
+    if (!m || !DATE_KEY.test(m.date)) return void stats.skipped++;
+    const id = cleanId(m.id);
+    if (target.measurements.some(x => x.id === id)) return;
+    const n = v => Number(v) > 0 && Number(v) < 100 ? Math.round(Number(v) * 10) / 10 : null;
+    if (n(m.waist) || n(m.chest) || n(m.arms)) target.measurements.push({ id: id, date: m.date, waist: n(m.waist), chest: n(m.chest), arms: n(m.arms) });
   });
   if (inc.presetsSeeded) target.presetsSeeded = true; // don't re-add the starter presets after importing yours
   return stats;

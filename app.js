@@ -2,11 +2,11 @@
 
 const screens = {
   today: screenToday, workouts: screenWorkouts, workout: screenWorkout, picker: screenPicker,
-  exercise: screenExercise, cardio: screenCardio, history: screenHistory,
+  exercise: screenExercise, cardio: screenCardio, history: screenHistory, guided: screenGuided, tips: screenTips,
 };
 const renderers = {
   today: renderToday, workouts: renderWorkouts, workout: renderWorkout, picker: renderPicker,
-  exercise: renderExercise, cardio: renderCardio, history: renderHistory,
+  exercise: renderExercise, cardio: renderCardio, history: renderHistory, guided: renderGuided, tips: renderTips,
 };
 
 function showScreen(name) {
@@ -50,6 +50,7 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) chec
 setInterval(checkNewDay, 60000);
 
 seedPresets(); // add the starter presets on first launch
+offerRecompPresets(); // add the Recomp presets once
 applyWeekendRest(); // one-time: Saturday and Sunday become rest days
 showScreen("today");
 queueOnlineSync(); // signed in? send your latest totals

@@ -10,6 +10,10 @@
 //              ^ these are your "presets". Old templates without days/minReps/maxReps still work.
 //   presetsSeeded: true once the starter presets have been offered (so deleting them keeps them deleted)
 //   cardioDays: [4]  weekdays that are scheduled as cardio days (a weekday with no preset is a rest day)
+//   Presets may also have: kind ("strength" | "circuit" | "intervals" | "cardio"), about (minutes), short (week-bar label),
+//     finisher { text, type, minutes }, steps [text], plan {...timer numbers}, cardioType. Exercises may have seconds, failureLast, note.
+//   Cardio entries may also have: floors, effort (1-10), presetId, presetName
+//   measurements: [ { id, date, waist, chest, arms } ]  (optional, never uploaded)
 //   customExercises: [ { name, muscle, equipment } ], customRest: 30
 // }
 
@@ -29,6 +33,10 @@ function loadData() {
     shortcutName: "Log Workout to Health", // the iOS Shortcut that logs to Apple Health
     cardioDays: [4],       // weekdays scheduled as "Cardio day" (0 = Sunday ... 6 = Saturday). Thursday to start.
     weekendsRestDone: false, // the one-time "make Sat and Sun rest days" change has been applied
+    recompOffered: false,  // the Recomp presets were added once (deleting them keeps them deleted)
+    measurements: [],      // optional monthly check-ins { id, date, waist, chest, arms } in inches. Private: stays on this phone.
+    photoReminder: true,   // reminder on the 1st of each month (the app never stores photos)
+    photoDismissed: "",    // the month ("2026-10") whose reminder was dismissed
   };
   try {
     return Object.assign(empty, JSON.parse(localStorage.getItem(STORAGE_KEY)));

@@ -158,7 +158,7 @@ function todaysPresetsHtml() {
   return list.map(p => `<div class="card">
       <div class="muted">${title}</div>
       <h3>${esc(p.name)}</h3>
-      <p class="muted">${p.exercises.length} exercises · ${esc(presetMuscles(p).join(", "))}</p>
+      <p class="muted">${esc(presetSummary(p))}</p>
       <button class="big primary" data-preset-start="${p.id}">Start</button></div>`).join("");
 }
 
@@ -168,13 +168,14 @@ function renderToday() {
   const label = new Date(date + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
   const scheduled = presetForDay(new Date(date + "T00:00:00").getDay());
-  const title = w.day === "Rest" && scheduled ? scheduled.name : w.day; // e.g. a preset called "Upper A"
-  let html = `<h1>${esc(title)} Day</h1><p class="muted">${label}</p>${todaysPresetsHtml()}<div id="week"></div>`;
+  const ownPreset = w.day === "Rest" && scheduled; // a preset with its own name, like "Recomp Full Body A"
+  const title = ownPreset ? scheduled.name : w.day;
+  let html = `<h1>${esc(title)}${PLAN[title] ? " Day" : ""}</h1><p class="muted">${label}</p>${guidedBannerHtml()}${photoReminderHtml()}${todaysPresetsHtml()}<div id="week"></div>${consistencyHtml(true)}`;
 
   html += `<div class="row days">` + ["Push", "Pull", "Legs", "Cardio", "Rest"]
-    .map(d => `<button data-day="${d}" class="${d === w.day ? "on" : ""}">${d}</button>`).join("") + `</div>`;
+    .map(d => `<button data-day="${d}" class="${d === w.day && !ownPreset ? "on" : ""}">${d}</button>`).join("") + `</div>`;
 
-  const note = dayNote(w.day);
+  const note = ownPreset ? "" : dayNote(w.day);
   if (note) html += `<div class="card">${note}</div>`;
 
   if (w.exercises.length) {
@@ -196,6 +197,9 @@ screenToday.addEventListener("click", async e => {
 
   const presetBtn = e.target.closest("[data-preset-start]");
   if (presetBtn) return startPreset(presetBtn.dataset.presetStart);
+
+  if (e.target.closest("[data-open-progress]")) { historyTab = "stats"; checkinOpen = true; return showScreen("history"); }
+  if (e.target.closest("[data-photo-dismiss]")) { data.photoDismissed = dateKey(new Date()).slice(0, 7); saveData(); return renderToday(); }
 
   const w = getWorkout(viewDate());
 

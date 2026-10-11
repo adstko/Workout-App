@@ -12,6 +12,28 @@ function openExercise(i) {
   showScreen("exercise");
 }
 
+// "Target: 4 sets × 6-8 reps" (or seconds), plus "last set to failure" and a hint if the preset has one
+function targetLine(ex) {
+  let text = "";
+  if (ex.seconds) text = `Target: ${ex.sets.length} sets × ${ex.seconds} sec`;
+  else if (ex.minReps) text = `Target: ${ex.sets.length} sets × ${repText(ex)} reps`;
+  if (text && ex.failureLast) text += " · last set to failure (stop if your form breaks)";
+  return (text ? `<p class="muted">${text}</p>` : "") + (ex.hint ? `<p class="muted">${esc(ex.hint)}</p>` : "");
+}
+
+// Hit the top of the rep range on every set last time? Suggest adding weight (5 lb, or 2.5 lb for small lifts)
+function progressTipFor(ex) {
+  if (TIMED.includes(ex.name) || !ex.maxReps) return null;
+  const last = lastSession(ex.name, "9999-12-31");
+  if (!last) return null;
+  const done = last.sets.filter(s => s.done);
+  if (done.length < ex.sets.length || !done.every(s => Number(s.reps) >= ex.maxReps)) return null;
+  const best = Math.max(...done.map(s => Number(s.weight) || 0));
+  const add = SMALL_LIFTS.includes(ex.name) ? 2.5 : 5;
+  if (ex.sets.every(s => Number(s.weight) >= best + add)) return null; // you already moved up
+  return { add: add, newWeight: best + add };
+}
+
 function renderExercise() {
   const a = data.active;
   const ex = a && a.exercises[currentEx];
@@ -32,13 +54,19 @@ function renderExercise() {
 
     <div class="head">
       <div><h1>${esc(ex.name)}</h1><p class="muted">${esc(ex.muscle)} · ${esc(ex.equipment)}</p>
-        ${ex.minReps ? `<p class="muted">Target: ${ex.sets.length} sets × ${repText(ex)} reps</p>` : ""}</div>
+        ${targetLine(ex)}</div>
       <button class="dots" id="ex-menu" aria-label="More">⋮</button>
     </div>`;
 
   if (ex.superset) {
     const partner = a.exercises.find((o, k) => k !== currentEx && o.superset === ex.superset);
     if (partner) html += `<p><span class="tag ss">SUPER SET</span> with ${esc(partner.name)}</p>`;
+  }
+
+  const tip = progressTipFor(ex);
+  if (tip) {
+    html += `<div class="tip">You hit ${ex.maxReps} reps on every set last time. Time to add ${tip.add} lb.
+      <button data-usetip="1" data-weight="${tip.newWeight}">Use ${tip.newWeight} lb</button></div>`;
   }
 
   if (menuOpen) {
@@ -80,6 +108,12 @@ screenExercise.addEventListener("click", async e => {
   const btn = e.target.closest("button");
   if (!btn) return;
 
+  if (btn.dataset.usetip) {
+    ex.sets.forEach(s => { if (!s.done) s.weight = btn.dataset.weight; }); // weight for the sets still to do
+    saveData();
+    renderExercise();
+    return;
+  }
   if (btn.dataset.adj) {
     const change = Number(btn.dataset.adj);
     data.customRest = Math.min(300, Math.max(15, data.customRest + change));

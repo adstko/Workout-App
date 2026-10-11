@@ -41,7 +41,7 @@ const TIMED = ["Plank", "Side plank"];
 // Which day to show by default. getDay(): Sunday = 0 ... Saturday = 6
 const DEFAULT_DAYS = ["Rest", "Push", "Pull", "Legs", "Cardio", "Push", "Rest"]; // Sat and Sun are rest days
 
-const CARDIO_TYPES = ["Incline walk", "Bike", "Jog", "Intervals (8 x 30s hard / 90s easy)", "Stairs", "Golf", "Long walk", "Other"];
+const CARDIO_TYPES = ["Incline walk", "Bike", "Jog", "Intervals (8 x 30s hard / 90s easy)", "Circuit", "Stairs", "Golf", "Long walk", "Other"];
 
 // "Net miles ran": everything counted as running miles, so different cardio can be compared fairly.
 // These are rough rules of thumb based on how much effort each takes. Change the numbers if you disagree.
@@ -75,6 +75,7 @@ const HEALTH_TYPES = {
   "Bike": "Cycling",
   "Jog": "Running",
   "Intervals (8 x 30s hard / 90s easy)": "High Intensity Interval Training",
+  "Circuit": "Cross Training",
   "Stairs": "Stair Climbing",
   "Golf": null, // null = never sent: 18Birdies already logs golf in Apple Fitness
   "Long walk": "Walking",
@@ -83,3 +84,14 @@ const HEALTH_TYPES = {
 function healthTypeFor(cardioType) {
   return cardioType in HEALTH_TYPES ? HEALTH_TYPES[cardioType] : "Other";
 }
+
+// Small lifts go up by 2.5 lb when the add-weight tip shows (everything else goes up by 5 lb)
+const SMALL_LIFTS = ["Lateral raises", "Triceps pushdowns", "Pec fly machine", "Face pulls", "Curls", "Hammer curls", "Cable fly", "Dumbbell fly",
+  "Rear delt fly", "Front raises", "Cable lateral raise", "Overhead triceps extension", "Cable curl", "Preacher curl", "Shrugs"];
+
+// The Strength chart on the Progress tab: the heaviest completed set each week
+const STRENGTH_LIFTS = [
+  { label: "Squat", names: ["Squat"] },
+  { label: "Bench press", names: ["Bench press"] },
+  { label: "Row", names: ["Seated cable row", "Cable row", "Barbell row", "Dumbbell row", "T-bar row", "Seated row machine", "Chest-supported row"] },
+];

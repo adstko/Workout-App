@@ -14,10 +14,16 @@ function makeExercise(item, setCount) {
   const sets = [];
   for (let i = 0; i < count; i++) {
     const src = done[Math.min(i, done.length - 1)];
-    sets.push({ weight: src ? src.weight : "", reps: src ? src.reps : "", done: false, failure: false });
+    sets.push({
+      weight: src ? src.weight : "",
+      reps: src ? src.reps : (item.seconds ? String(item.seconds) : ""), // a timed move starts at its target seconds
+      done: false,
+      failure: !!item.failureLast && i === count - 1, // "last set to failure" (you can switch it off)
+    });
   }
   return { name: item.name, muscle: item.muscle, equipment: item.equipment, note: "", superset: item.superset || null,
            minReps: item.minReps || null, maxReps: item.maxReps || null, // the preset's target rep range
+           seconds: item.seconds || null, failureLast: !!item.failureLast, hint: item.note || "",
            sets: sets };
 }
 
@@ -49,9 +55,14 @@ function renderWorkout() {
       <b>${esc(ex.name)}</b>
       ${ex.superset ? '<span class="tag ss">SUPER SET</span>' : ""}
       ${doneCount ? `<span class="tag ok">${doneCount}/${ex.sets.length} ✓</span>` : ""}
-      <span class="muted">${ex.sets.length} ${ex.sets.length === 1 ? "set" : "sets"}, ${esc(ex.muscle)}${ex.minReps ? " · " + repText(ex) + " reps" : ""}</span>
+      <span class="muted">${ex.sets.length} ${ex.sets.length === 1 ? "set" : "sets"}, ${esc(ex.muscle)}${ex.minReps ? " · " + repText(ex) + " reps" : ex.seconds ? " · " + ex.seconds + " sec" : ""}</span>
     </button>`;
   });
+
+  if (a.finisher) {
+    html += `<div class="card"><b>Finish with</b><div class="muted">${esc(a.finisher.text)}</div>
+      <button class="big" id="w-finisher" style="margin-top:10px">Log it in Cardio</button></div>`;
+  }
 
   html += `<div class="stack" style="margin-top:14px">
       <button class="big" id="w-select">Select exercise</button>
@@ -134,6 +145,7 @@ screenWorkout.addEventListener("click", async e => {
 
   const id = e.target.id;
   if (id === "w-finish") finishWorkout();
+  else if (id === "w-finisher") openCardioLog({ type: a.finisher.type, minutes: a.finisher.minutes, notes: "After " + a.name });
   else if (id === "w-template") saveAsPreset();
   else if (id === "w-discard") {
     if (await askConfirm("Discard this workout? Everything you logged in it will be lost.", "Discard")) {

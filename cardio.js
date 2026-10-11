@@ -13,6 +13,21 @@ function dateChoices() {
   return html;
 }
 
+// How hard it felt, 1 to 10
+const EFFORT_LABELS = { 1: "very easy", 3: "easy", 5: "moderate", 7: "hard", 9: "very hard", 10: "as hard as it gets" };
+function effortOptions() {
+  let html = `<option value="">Skip</option>`;
+  for (let n = 1; n <= 10; n++) html += `<option value="${n}">${n}${EFFORT_LABELS[n] ? " · " + EFFORT_LABELS[n] : ""}</option>`;
+  return html;
+}
+
+// Open the Cardio form with some boxes already filled in (used by "Log it" buttons). { type, minutes, notes }
+let cardioPrefill = null;
+function openCardioLog(fill) {
+  cardioPrefill = fill;
+  showScreen("cardio");
+}
+
 function renderCardio() {
   let html = `<h1>Cardio</h1>
     <div class="card muted">
@@ -38,6 +53,8 @@ function renderCardio() {
         <div><label>Climbed, ft (optional)</label>
           <input type="number" name="climb" inputmode="numeric" min="0" max="30000" step="any" placeholder="e.g. 400"></div>
       </div>
+      <label>How hard did it feel? (optional)</label>
+      <select name="effort">${effortOptions()}</select>
       <label>Notes</label>
       <input type="text" name="notes" placeholder="Optional">
       <p></p>
@@ -51,12 +68,20 @@ function renderCardio() {
   if (list.length === 0) html += `<p class="muted">Nothing logged yet.</p>`;
   list.forEach(c => {
     html += `<div class="card entry"><div>
-      <b>${esc(c.type)}</b> · ${c.minutes} min${c.floors ? " · " + c.floors + " floors" : ""}${c.miles ? " · " + c.miles + " mi" : ""}${c.climb && !c.floors ? " · " + c.climb + " ft climbed" : ""}<br>
+      <b>${esc(c.type)}</b> · ${c.minutes} min${c.floors ? " · " + c.floors + " floors" : ""}${c.miles ? " · " + c.miles + " mi" : ""}${c.climb && !c.floors ? " · " + c.climb + " ft climbed" : ""}${c.effort ? " · felt " + c.effort + "/10" : ""}<br>
       <span class="muted">${prettyDate(c.date)}${c.notes ? " · " + esc(c.notes) : ""}${healthTypeFor(c.type) ? "" : " · already in Fitness via 18Birdies"}</span>
       </div><div class="btns">${healthTypeFor(c.type) ? `<button data-health="${c.id}">Send to Health</button>` : ""}<button data-delete="${c.id}">Delete</button></div></div>`;
   });
 
   screenCardio.innerHTML = html;
+
+  if (cardioPrefill) { // "Log it" buttons fill in the form for you
+    const form = document.getElementById("cardio-form");
+    if (cardioPrefill.type) form.type.value = cardioPrefill.type;
+    if (cardioPrefill.minutes) form.minutes.value = cardioPrefill.minutes;
+    if (cardioPrefill.notes) form.notes.value = cardioPrefill.notes;
+    cardioPrefill = null;
+  }
 }
 
 screenCardio.addEventListener("submit", e => {
@@ -73,6 +98,7 @@ screenCardio.addEventListener("submit", e => {
     floors: floors,                                                                      // stairs only
     climb: stairs ? (floors ? floors * 10 : null)                                         // a floor is about 10 ft
                   : (form.climb.value ? Math.max(0, Number(form.climb.value)) : null),   // optional, feet
+    effort: form.effort.value ? Number(form.effort.value) : null,   // 1-10, optional
     notes: form.notes.value.trim(),
   });
   saveData();
