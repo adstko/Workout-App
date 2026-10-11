@@ -198,6 +198,7 @@ screenToday.addEventListener("click", async e => {
   const presetBtn = e.target.closest("[data-preset-start]");
   if (presetBtn) return startPreset(presetBtn.dataset.presetStart);
 
+  if (e.target.closest("[data-open-photos]")) return openPhotos();
   if (e.target.closest("[data-open-progress]")) { historyTab = "stats"; checkinOpen = true; return showScreen("history"); }
   if (e.target.closest("[data-photo-dismiss]")) { data.photoDismissed = dateKey(new Date()).slice(0, 7); saveData(); return renderToday(); }
 

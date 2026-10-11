@@ -2,17 +2,19 @@
 
 const screens = {
   today: screenToday, workouts: screenWorkouts, workout: screenWorkout, picker: screenPicker,
-  exercise: screenExercise, cardio: screenCardio, history: screenHistory, guided: screenGuided, tips: screenTips,
+  exercise: screenExercise, cardio: screenCardio, history: screenHistory, guided: screenGuided, tips: screenTips, photos: screenPhotos,
 };
 const renderers = {
   today: renderToday, workouts: renderWorkouts, workout: renderWorkout, picker: renderPicker,
-  exercise: renderExercise, cardio: renderCardio, history: renderHistory, guided: renderGuided, tips: renderTips,
+  exercise: renderExercise, cardio: renderCardio, history: renderHistory, guided: renderGuided, tips: renderTips, photos: renderPhotos,
 };
 
 function showScreen(name) {
   clearInterval(elapsedId); // the workout clock only runs while its screen is open
+  if (name !== "photos") photosLeft(); // photos never stay on the page after you leave the Photos screen
   for (const key in screens) screens[key].hidden = key !== name;
-  document.querySelectorAll("nav button[data-screen]").forEach(b => b.classList.toggle("active", b.dataset.screen === name));
+  const navName = name === "photos" ? "history" : name; // Photos lives under the History tab
+  document.querySelectorAll("nav button[data-screen]").forEach(b => b.classList.toggle("active", b.dataset.screen === navName));
   document.body.classList.toggle("in-exercise", name === "exercise");
   renderers[name](); // redraw so the screen always shows fresh data
   window.scrollTo(0, 0);

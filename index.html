@@ -19,6 +19,7 @@
     <section id="screen-tips" class="screen" hidden></section>
     <section id="screen-cardio" class="screen" hidden></section>
     <section id="screen-history" class="screen" hidden></section>
+    <section id="screen-photos" class="screen" hidden></section>
   </main>
 
   <!-- Rest timer bar: sits above the tab bar, hidden until a set is finished -->
@@ -29,6 +30,9 @@
   </div>
 
   <div id="toast" hidden></div>
+
+  <!-- Covers the screen when the app goes to the background while Photos is open -->
+  <div id="privacy-cover" hidden><div>Private</div></div>
 
   <!-- In-page replacement for confirm()/prompt() -->
   <div id="dialog" hidden>
@@ -70,6 +74,8 @@
   <script src="history.js"></script>
   <script src="stats.js"></script>
   <script src="friends.js"></script>
+  <script src="photostore.js"></script>
+  <script src="photos.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

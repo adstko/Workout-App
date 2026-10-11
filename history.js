@@ -14,6 +14,7 @@ function renderHistory() {
   const tabs = `<h1>${titles[historyTab]}</h1><div class="row" style="margin-bottom:12px">
       <button data-history-tab="log" class="${historyTab === "log" ? "on" : ""}">History</button>
       <button data-history-tab="stats" class="${historyTab === "stats" ? "on" : ""}">Progress</button>
+      <button data-open-photos="1">Photos</button>
       <button data-history-tab="friends" class="${historyTab === "friends" ? "on" : ""}">Friends</button></div>`;
   if (historyTab === "stats") {
     screenHistory.innerHTML = tabs + statsHtml();
@@ -166,6 +167,7 @@ async function savePresetFromWorkout(id) {
 screenHistory.addEventListener("click", e => {
   const tab = e.target.closest("[data-history-tab]");
   if (tab) { historyTab = tab.dataset.historyTab; renderHistory(); return; }
+  if (e.target.closest("[data-open-photos]")) return openPhotos();
   if (e.target.id === "export-btn") exportData();
   else if (e.target.dataset.savePreset) savePresetFromWorkout(e.target.dataset.savePreset);
   else if (e.target.dataset.health) sendWorkoutToHealth(e.target.dataset.health);

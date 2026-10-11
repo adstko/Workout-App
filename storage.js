@@ -35,7 +35,7 @@ function loadData() {
     weekendsRestDone: false, // the one-time "make Sat and Sun rest days" change has been applied
     recompOffered: false,  // the Recomp presets were added once (deleting them keeps them deleted)
     measurements: [],      // optional monthly check-ins { id, date, waist, chest, arms } in inches. Private: stays on this phone.
-    photoReminder: true,   // reminder on the 1st of each month (the app never stores photos)
+    photoReminder: true,   // reminder on the 1st of each month (opens the private Photos tab; photos are kept apart from this data)
     photoDismissed: "",    // the month ("2026-10") whose reminder was dismissed
   };
   try {

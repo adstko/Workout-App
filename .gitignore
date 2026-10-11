@@ -1,0 +1,19 @@
+# PROGRESS PHOTOS ARE PRIVATE. Never commit photos or exports (this repo is public on GitHub Pages).
+# Photos live only inside the phone's browser (IndexedDB), never in these project files.
+photos/
+progress-photos/
+photo-exports/
+exports/
+backups/
+workout-photos*
+*.zip
+*.jpg
+*.jpeg
+*.png
+*.heic
+*.heif
+*.webp
+*.gif
+*.mov
+*.mp4
+.DS_Store

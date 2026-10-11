@@ -119,8 +119,8 @@ function photoReminderHtml() {
   const now = new Date(), month = dateKey(now).slice(0, 7);
   if (now.getDate() !== 1 || !data.photoReminder || data.photoDismissed === month) return "";
   return `<div class="card"><b>Monthly check-in</b>
-    <div class="muted">It's the 1st. If you want to, take a progress photo and write down your measurements. It's completely optional. Photos stay on your phone: this app never stores them.</div>
-    <div class="row" style="margin-top:10px"><button data-open-progress="1">Add measurements</button><button data-photo-dismiss="1">Not this month</button></div></div>`;
+    <div class="muted">It's the 1st: time for a check-in if you want one. It's completely optional. Photos stay on this phone only.</div>
+    <div class="row" style="margin-top:10px"><button data-open-photos="1">Open Photos</button><button data-photo-dismiss="1">Not this month</button></div></div>`;
 }
 
 let checkinOpen = false; // the monthly check-in fold-out on the Progress tab
@@ -189,7 +189,7 @@ function checkinHtml() {
   const list = data.measurements.slice().sort((a, b) => b.date.localeCompare(a.date));
   const field = (id, label) => `<div><label for="${id}">${label}</label><input id="${id}" type="number" inputmode="decimal" min="0" max="99" step="any" placeholder="inches"></div>`;
   return `<details id="checkin" ${checkinOpen ? "open" : ""} style="margin-top:14px"><summary>Monthly check-in (optional)</summary>
-    <div><p class="muted">Just for you. This stays on your phone and is never uploaded or shared. The app never stores photos.</p>
+    <div><p class="muted">Just for you. This stays on your phone and is never uploaded or shared. Photos have their own private place: History > Photos.</p>
       <div class="stack">${field("ci-waist", "Waist (in)")}${field("ci-chest", "Chest (in)")}${field("ci-arms", "Arms (in)")}
         <button class="big primary" data-save-checkin="1">Save today's measurements</button></div>
       ${list.map(m => `<div class="entry" style="margin-top:10px"><div>${esc(prettyDate(m.date))}<div class="muted">${[m.waist ? "waist " + m.waist : "", m.chest ? "chest " + m.chest : "", m.arms ? "arms " + m.arms : ""].filter(Boolean).join(" · ")} in</div></div>
