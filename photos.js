@@ -71,7 +71,7 @@ async function renderPhotos(keepScroll) {
 
 function head() {
   const tab = (key, label, on) => `<button ${key ? `data-history-tab="${key}"` : ""} class="${on ? "on" : ""}">${label}</button>`;
-  return `<h1>Photos</h1><div class="row" style="margin-bottom:12px">${tab("log", "History")}${tab("stats", "Progress")}${tab("", "Photos", true)}${tab("friends", "Friends")}</div>${PRIVATE_LABEL}`;
+  return `<h1>Photos</h1><div class="row tabs" style="margin-bottom:12px">${tab("log", "History")}${tab("stats", "Progress")}${tab("", "Photos", true)}${tab("friends", "Friends")}</div>${PRIVATE_LABEL}`;
 }
 
 async function buildView() {

@@ -11,7 +11,7 @@ function loggedWorkouts() {
 
 function renderHistory() {
   const titles = { log: "History", stats: "Progress", friends: "Friends" };
-  const tabs = `<h1>${titles[historyTab]}</h1><div class="row" style="margin-bottom:12px">
+  const tabs = `<h1>${titles[historyTab]}</h1><div class="row tabs" style="margin-bottom:12px">
       <button data-history-tab="log" class="${historyTab === "log" ? "on" : ""}">History</button>
       <button data-history-tab="stats" class="${historyTab === "stats" ? "on" : ""}">Progress</button>
       <button data-open-photos="1">Photos</button>
