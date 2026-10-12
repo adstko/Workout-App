@@ -76,7 +76,7 @@ function authHtml() {
 function friendsTabs() {
   const incoming = fr.friendships.filter(f => f.status === "pending" && f.addressee === session.user_id).length;
   const tabs = [["board", "Board"], ["feed", "Feed"], ["friends", "Friends" + (incoming ? " (" + incoming + ")" : "")], ["me", "Me"]];
-  return `<div class="row" style="margin-bottom:12px">` + tabs.map(([key, label]) =>
+  return `<div class="row tabs" style="margin-bottom:12px">` + tabs.map(([key, label]) =>
     `<button data-fr-view="${key}" class="${key === friendsView ? "on" : ""}">${label}</button>`).join("") + `</div>`;
 }
 
