@@ -93,8 +93,8 @@ function weekPlanProgress() {
   const now = new Date(), since = (now.getDay() + 6) % 7, days = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - since + i);
-    const key = dateKey(d), preset = presetForDay(d.getDay());
-    const planned = !!preset || data.cardioDays.includes(d.getDay());
+    const key = dateKey(d), sch = scheduleFor(key), preset = sch.preset;
+    const planned = !!preset || sch.cardio;
     days.push({ key: key, label: WEEK[i][0], planned: planned, name: preset ? (preset.short || preset.name) : planned ? "Cardio" : "",
                 done: planned && didTrain(key), isToday: key === todayKey(), future: key > todayKey() });
   }

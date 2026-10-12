@@ -36,13 +36,12 @@ function buildWorkout(day, date) {
 
 // Which Push/Pull/Legs/Cardio/Rest day a date starts as: whatever the weekly schedule says
 function defaultDayFor(date) {
-  const n = new Date(date + "T00:00:00").getDay();
-  const preset = presetForDay(n);
+  const { preset, cardio } = scheduleFor(date);
   if (preset) {
     const match = Object.keys(PLAN).find(k => k.toLowerCase() === preset.name.toLowerCase());
     return match || "Rest"; // a preset with its own name is shown by the preset card at the top
   }
-  return data.cardioDays.includes(n) ? "Cardio" : "Rest";
+  return cardio ? "Cardio" : "Rest";
 }
 
 // Get (or create) the workout for a date
@@ -87,7 +86,7 @@ function renderWeek() {
     const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - sinceMonday + i);
     const key = dateKey(date);
     html += `<button class="weekday ${didTrain(key) ? "trained" : ""} ${key === todayKey() ? "today" : ""} ${key === viewDate() ? "selected" : ""}" data-daykey="${key}">
-      ${WEEK[i][0]}<b>${date.getDate()}${didTrain(key) ? '<span class="ck">✓</span>' : ""}</b><small>${esc(scheduleLabel(date.getDay()))}</small></button>`;
+      ${WEEK[i][0]}<b>${date.getDate()}${didTrain(key) ? '<span class="ck">✓</span>' : ""}</b><small>${esc(scheduleLabelFor(key))}</small></button>`;
   }
   document.getElementById("week").innerHTML = html;
 }
@@ -150,7 +149,8 @@ function todaysPresetsHtml() {
   const day = new Date(viewDate() + "T00:00:00");
   const isToday = viewDate() === todayKey();
   const title = isToday ? "Today's preset" : day.toLocaleDateString(undefined, { weekday: "long" }) + "'s preset";
-  const list = data.templates.filter(p => (p.days || []).includes(day.getDay()));
+  const own = scheduleFor(viewDate()).preset;
+  const list = (data.dayOverrides || {})[viewDate()] !== undefined ? (own ? [own] : []) : data.templates.filter(p => (p.days || []).includes(day.getDay()));
   if (list.length === 0) {
     return `<div class="card"><div class="muted">${title}</div>
       <p class="muted">Rest day. Nothing scheduled. Set your week in the Workouts tab.</p></div>`;
@@ -167,7 +167,7 @@ function renderToday() {
   const w = getWorkout(date);
   const label = new Date(date + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
-  const scheduled = presetForDay(new Date(date + "T00:00:00").getDay());
+  const scheduled = scheduleFor(date).preset;
   const ownPreset = w.day === "Rest" && scheduled; // a preset with its own name, like "Recomp Full Body A"
   const title = ownPreset ? scheduled.name : w.day;
   let html = `<h1>${esc(title)}${PLAN[title] ? " Day" : ""}</h1><p class="muted">${label}</p>${guidedBannerHtml()}${photoReminderHtml()}${todaysPresetsHtml()}<div id="week"></div>${consistencyHtml(true)}`;
@@ -209,16 +209,15 @@ screenToday.addEventListener("click", async e => {
     const anyDone = w.exercises.some(ex => ex.sets.some(s => s.done));
     if (anyDone && !(await askConfirm("Switching days clears today's logged sets. Continue?", "Switch"))) return;
     const chosen = dayBtn.dataset.day;
-    // Today and later days: the schedule for that weekday changes too, so the week bar, the preset
-    // card and the Weekly schedule all agree. (Past days only change that one day's workout.)
+    // Only THIS date changes (not every Monday, Tuesday, ...). The week bar and preset card follow it.
     if (viewDate() >= todayKey()) {
-      const n = new Date(viewDate() + "T00:00:00").getDay();
-      const dayName = new Date(viewDate() + "T00:00:00").toLocaleDateString(undefined, { weekday: "long" });
+      data.dayOverrides = data.dayOverrides || {};
       const preset = data.templates.find(t => t.name.toLowerCase() === chosen.toLowerCase());
       if (chosen === "Cardio" || chosen === "Rest" || preset) {
-        setDaySchedule(n, chosen === "Cardio" ? "cardio" : chosen === "Rest" ? "" : preset.id);
-        toast(dayName + "s are now " + chosen);
+        data.dayOverrides[viewDate()] = chosen === "Cardio" ? "cardio" : chosen === "Rest" ? "" : preset.id;
+        toast("Changed for this day only");
       } else {
+        delete data.dayOverrides[viewDate()];
         toast("No preset called " + chosen + ", so the schedule stays the same.");
       }
     }

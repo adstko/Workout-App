@@ -34,6 +34,7 @@ function loadData() {
     cardioDays: [4],       // weekdays scheduled as "Cardio day" (0 = Sunday ... 6 = Saturday). Thursday to start.
     weekendsRestDone: false, // the one-time "make Sat and Sun rest days" change has been applied
     recompOffered: false,  // the Recomp presets were added once (deleting them keeps them deleted)
+    dayOverrides: {},      // a single date's schedule changed on the Today tab: { "2026-10-14": presetId | "cardio" | "" (rest) }
     measurements: [],      // optional monthly check-ins { id, date, waist, chest, arms } in inches. Private: stays on this phone.
     photoReminder: true,   // reminder on the 1st of each month (opens the private Photos tab; photos are kept apart from this data)
     photoDismissed: "",    // the month ("2026-10") whose reminder was dismissed

@@ -45,7 +45,22 @@ function presetForDay(n) {
   return data.templates.find(p => (p.days || []).includes(n));
 }
 
-// What a weekday shows in the week bar: its preset, "Cardio" or "Rest"
+// What one DATE is scheduled as: { preset, cardio }. A change made on the Today tab for a single date
+// (data.dayOverrides) wins; otherwise the weekly schedule for that weekday applies.
+function scheduleFor(key) {
+  const o = data.dayOverrides || {};
+  if (key in o) return { preset: data.templates.find(t => t.id === o[key]), cardio: o[key] === "cardio" };
+  const n = new Date(key + "T00:00:00").getDay(), preset = presetForDay(n);
+  return { preset: preset, cardio: !preset && data.cardioDays.includes(n) };
+}
+
+// What a date shows in the week bar: its preset, "Cardio" or "Rest"
+function scheduleLabelFor(key) {
+  const s = scheduleFor(key);
+  return s.preset ? (s.preset.short || s.preset.name) : s.cardio ? "Cardio" : "Rest";
+}
+
+// What a weekday shows in the weekly schedule: its preset, "Cardio" or "Rest"
 function scheduleLabel(n) {
   const p = presetForDay(n);
   return p ? (p.short || p.name) : data.cardioDays.includes(n) ? "Cardio" : "Rest";
