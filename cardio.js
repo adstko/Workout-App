@@ -71,8 +71,8 @@ function renderCardio() {
   list.forEach(c => {
     html += `<div class="card entry"><div>
       <b>${esc(c.type)}</b> · ${c.minutes} min${c.floors ? " · " + c.floors + " floors" : ""}${c.miles ? " · " + c.miles + " mi" : ""}${c.climb && !c.floors ? " · " + c.climb + " ft climbed" : ""}${c.effort ? " · felt " + c.effort + "/10" : ""}${c.mode ? " · " + (c.mode === "home" ? "Home" : "Gym") : ""}<br>
-      <span class="muted">${prettyDate(c.date)}${c.notes ? " · " + esc(c.notes) : ""}${healthTypeFor(c.type) ? "" : " · already in Fitness via 18Birdies"}</span>
-      </div><div class="btns">${healthTypeFor(c.type) ? `<button data-health="${c.id}">Send to Health</button>` : ""}<button data-delete="${c.id}">Delete</button></div></div>`;
+      <span class="muted">${prettyDate(c.date)}${c.notes ? " · " + esc(c.notes) : ""}${data.cardioInHealth ? " · already in Health from your watch" : healthTypeFor(c.type) ? "" : " · already in Fitness via 18Birdies"}</span>
+      </div><div class="btns">${!data.cardioInHealth && healthTypeFor(c.type) ? `<button data-health="${c.id}">Send to Health</button>` : ""}<button data-delete="${c.id}">Delete</button></div></div>`;
   });
 
   screenCardio.innerHTML = html;

@@ -34,6 +34,7 @@ function loadData() {
     cardioDays: [4],       // weekdays scheduled as "Cardio day" (0 = Sunday ... 6 = Saturday). Thursday to start.
     weekendsRestDone: false, // the one-time "make Sat and Sun rest days" change has been applied
     recompOffered: false,  // the Recomp presets were added once (deleting them keeps them deleted)
+    cardioInHealth: true,  // your watch already puts cardio in Health, so cardio entries don't offer "Send to Health"
     homeWeekOffered: false, // the Home Full Body / Home Intervals / Easy Walk presets were added once
     weekMode: {},          // weekdays flipped to Home on the Week screen: { 1: { mode: "home", gym: presetId } }
     dateMode: {},          // one-day Gym/Home flips from the Today screen

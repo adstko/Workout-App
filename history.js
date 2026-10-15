@@ -57,7 +57,9 @@ function renderHistory() {
 
   html += `<h2>Apple Health</h2>
     <div class="card">
-      <p class="muted">Each workout above has a "Send to Apple Health" button, and so does each cardio entry. Weights are logged as ${WEIGHTS_HEALTH_TYPE}. Cardio is logged as the type you picked (Walking, Running, Cycling...). Golf is skipped because 18Birdies already logs it in Fitness.</p>
+      <p class="muted">Each workout above has a "Send to Apple Health" button. Weights are logged as ${WEIGHTS_HEALTH_TYPE}. ${data.cardioInHealth ? "Cardio entries don't have one, because your watch already puts your cardio in Health." : "Cardio is logged as the type you picked (Walking, Running, Cycling...). Golf is skipped because 18Birdies already logs it in Fitness."}</p>
+      <div class="entry"><span>My watch already logs my cardio in Health</span>
+        <button data-cardio-health="1" class="${data.cardioInHealth ? "on" : ""}" style="min-width:76px">${data.cardioInHealth ? "On" : "Off"}</button></div>
       <label for="health-name">Name of your Shortcut</label>
       <input id="health-name" type="text" maxlength="60" value="${esc(data.shortcutName)}">
       <details><summary>One-time setup (iPhone)</summary>
@@ -168,6 +170,7 @@ screenHistory.addEventListener("click", e => {
   const tab = e.target.closest("[data-history-tab]");
   if (tab) { historyTab = tab.dataset.historyTab; renderHistory(); return; }
   if (e.target.closest("[data-open-photos]")) return openPhotos();
+  if (e.target.closest("[data-cardio-health]")) { data.cardioInHealth = !data.cardioInHealth; saveData(); renderHistory(); return; }
   if (e.target.id === "export-btn") exportData();
   else if (e.target.dataset.savePreset) savePresetFromWorkout(e.target.dataset.savePreset);
   else if (e.target.dataset.health) sendWorkoutToHealth(e.target.dataset.health);
