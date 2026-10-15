@@ -330,3 +330,9 @@ label.btn { position: relative; flex: 1; min-width: 70px; display: flex; align-i
 .row.seg button { min-height: 52px; }
 .row.seg button:disabled { opacity: .4; }
 .tag.day.ok { background: var(--green); color: #07210f; }
+
+/* Earlier / later week arrows above the week strip */
+#weeknav { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+#weeknav span { flex: 1; text-align: center; color: var(--muted); font-size: 16px; }
+#weeknav button { min-height: 44px; min-width: 56px; font-size: 22px; padding: 0; }
+#weeknav button:disabled { opacity: .35; }

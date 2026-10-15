@@ -78,16 +78,24 @@ function didTrain(key) {
   return lifted || data.cardio.some(c => c.date === key);
 }
 
+// How many weeks back the strip is showing (0 = this week). The arrows above it open earlier weeks.
+let weekShift = 0;
+
 function renderWeek() {
   const now = new Date();
   const sinceMonday = (now.getDay() + 6) % 7;
   let html = "";
   for (let i = 0; i < 7; i++) {
-    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - sinceMonday + i);
+    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - sinceMonday + i + 7 * weekShift);
     const key = dateKey(date);
     html += `<button class="weekday ${didTrain(key) ? "trained" : ""} ${key === todayKey() ? "today" : ""} ${key === viewDate() ? "selected" : ""}" data-daykey="${key}">
       ${WEEK[i][0]}<b>${date.getDate()}${didTrain(key) ? '<span class="ck">✓</span>' : ""}</b><small>${esc(scheduleLabelFor(key))}</small></button>`;
   }
+  const first = new Date(now.getFullYear(), now.getMonth(), now.getDate() - sinceMonday + 7 * weekShift), last = new Date(first.getFullYear(), first.getMonth(), first.getDate() + 6);
+  const fmt = d => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  document.getElementById("weeknav").innerHTML = `<button data-weekshift="-1" aria-label="Earlier week">‹</button>
+    <span>${weekShift === 0 ? "This week" : fmt(first) + " – " + fmt(last)}</span>
+    <button data-weekshift="1" aria-label="Later week" ${weekShift >= 0 ? "disabled" : ""}>›</button>`;
   document.getElementById("week").innerHTML = html;
 }
 
@@ -170,7 +178,7 @@ function renderToday() {
   const scheduled = scheduleFor(date).preset;
   const ownPreset = w.day === "Rest" && scheduled; // a preset with its own name, like "Recomp Full Body A"
   const title = ownPreset ? scheduled.name : w.day;
-  let html = `<h1>${esc(title)}${PLAN[title] ? " Day" : ""}</h1><p class="muted">${label}</p>${guidedBannerHtml()}${photoReminderHtml()}${todaysPresetsHtml()}${todaySwitchHtml()}${shortOnTimeHtml()}<div id="week"></div><button class="big" data-open-week="1" style="margin-bottom:12px">Plan my week (Gym / Home)</button>${consistencyHtml(true)}`;
+  let html = `<h1>${esc(title)}${PLAN[title] ? " Day" : ""}</h1><p class="muted">${label}</p>${guidedBannerHtml()}${photoReminderHtml()}${todaysPresetsHtml()}${todaySwitchHtml()}${shortOnTimeHtml()}<div id="weeknav"></div><div id="week"></div><button class="big" data-open-week="1" style="margin-bottom:12px">Plan my week (Gym / Home)</button>${consistencyHtml(true)}`;
 
   html += `<div class="row days">` + ["Push", "Pull", "Legs", "Cardio", "Home", "Rest"]
     .map(d => `<button data-day="${d}" class="${d === "Home" ? (scheduled && scheduled.home ? "on" : "") : d === w.day && !ownPreset ? "on" : ""}">${d}</button>`).join("") + `</div>`;
@@ -194,6 +202,8 @@ function renderToday() {
 screenToday.addEventListener("click", async e => {
   const dayCell = e.target.closest("[data-daykey]");
   if (dayCell) { viewKey = dayCell.dataset.daykey; renderToday(); return; }
+  const shift = e.target.closest("[data-weekshift]");
+  if (shift) { weekShift = Math.min(0, weekShift + Number(shift.dataset.weekshift)); renderToday(); return; }
 
   const presetBtn = e.target.closest("[data-preset-start]");
   if (presetBtn) return startPreset(presetBtn.dataset.presetStart);

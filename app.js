@@ -34,7 +34,7 @@ document.querySelector("nav").addEventListener("click", e => {
   if (!btn) return;
   if (btn.id === "new-workout") startWorkout(); // the big "+"
   else {
-    if (btn.dataset.screen === "today") viewKey = null; // the Today tab always opens on today
+    if (btn.dataset.screen === "today") { viewKey = null; weekShift = 0; } // the Today tab always opens on today
     showScreen(btn.dataset.screen);
   }
 });
@@ -46,6 +46,7 @@ function checkNewDay() {
   if (todayKey() === shownDay) return;
   shownDay = todayKey();
   viewKey = null;
+  weekShift = 0;
   if (!screenToday.hidden) renderToday();
 }
 document.addEventListener("visibilitychange", () => { if (!document.hidden) checkNewDay(); });
