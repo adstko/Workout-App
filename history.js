@@ -41,7 +41,7 @@ function renderHistory() {
   html += `<h2>Past workouts</h2>`;
   logged.slice().reverse().forEach(w => {
     const length = w.minutes ? " · " + w.minutes + " min" : "";
-    html += `<details ${w.id === openWorkoutId ? "open" : ""}><summary>${prettyDate(w.date)} · ${esc(w.name)}${length}</summary>`;
+    html += `<details ${w.id === openWorkoutId ? "open" : ""}><summary>${prettyDate(w.date)} · ${esc(w.name)}${length} · ${workoutMode(w) === "home" ? "Home" : "Gym"}</summary>`;
     w.exercises.forEach(ex => {
       const done = ex.sets.filter(s => s.done);
       if (done.length === 0) return;

@@ -68,6 +68,7 @@ function scheduleLabel(n) {
 
 // Schedule a weekday: value is a preset id, "cardio" for a cardio day, or "" for a rest day. One thing per day.
 function setDaySchedule(n, value) {
+  if (data.weekMode) delete data.weekMode[n]; // (the Week screen sets its Gym/Home note again after this)
   data.templates.forEach(p => { p.days = (p.days || []).filter(d => d !== n); });
   data.cardioDays = data.cardioDays.filter(d => d !== n);
   if (value === "cardio") data.cardioDays.push(n);
@@ -140,6 +141,7 @@ function renderWorkouts() {
       <button class="big" id="wk-empty">Start empty workout</button>
       <button class="big" id="wk-tips">Recomp tips</button></div>
     <h2>Weekly schedule</h2>
+    <button class="big primary" id="wk-open-week" style="margin-bottom:10px">Week planner (Gym / Home)</button>
     <div class="card">${WEEK.map(([label, n]) => {
       const current = presetForDay(n);
       const cardio = !current && data.cardioDays.includes(n);
@@ -185,6 +187,7 @@ async function startPreset(id) {
     startedAt: Date.now(),
     presetId: p.id, // so we can offer to update the preset after you finish
     finisher: p.finisher || null, // e.g. "10 min easy incline walk"
+    mode: modeForPreset(p),       // tagged Gym or Home in your history
     rest: p.rest || null,         // rest timer seconds for this preset (Home presets: 45)
     exercises: p.exercises.map(item => makeExercise(item, item.sets)),
   };
@@ -203,6 +206,11 @@ function renderPresetEditor() {
     <div class="chips" id="tpl-days">${WEEK.map(([label, n]) =>
       `<button data-day="${n}" class="${draft.days.includes(n) ? "on" : ""}">${label}</button>`).join("")}</div>
     <p class="muted">Tagged presets show up on the Today screen on those days.</p>
+    <label for="tpl-homeid">Home version (optional)</label>
+    <select id="tpl-homeid"><option value="">None</option>${data.templates.filter(t => t.id !== draft.id).map(t => `<option value="${t.id}" ${draft.homeId === t.id ? "selected" : ""}>${esc(t.name)}</option>`).join("")}</select>
+    <label for="tpl-gymid">Gym version (optional)</label>
+    <select id="tpl-gymid"><option value="">None</option>${data.templates.filter(t => t.id !== draft.id).map(t => `<option value="${t.id}" ${draft.gymId === t.id ? "selected" : ""}>${esc(t.name)}</option>`).join("")}</select>
+    <p class="muted">Used by the Gym / Home switch on the Week screen and the Today screen.</p>
     <label for="tpl-about">About how long (minutes)</label>
     <input id="tpl-about" type="number" inputmode="numeric" min="5" max="180" placeholder="e.g. 45" value="${draft.about || ""}">`;
 
@@ -286,6 +294,10 @@ function savePreset() {
   draft.name = draft.name.trim();
   const i = data.templates.findIndex(t => t.id === draft.id);
   if (i >= 0) data.templates[i] = draft; else data.templates.push(draft);
+  // Linking two presets goes both ways: the Home version knows its Gym version and the other way round
+  const homeV = draft.homeId && presetById(draft.homeId), gymV = draft.gymId && presetById(draft.gymId);
+  if (homeV) { homeV.home = true; homeV.gymId = draft.id; }
+  if (gymV) { draft.home = true; gymV.homeId = draft.id; }
   saveData();
   draft = null;
   toast("Preset saved");
@@ -313,6 +325,7 @@ screenWorkouts.addEventListener("click", async e => {
 
   if (btn.id === "wk-resume") showScreen("workout");
   else if (btn.id === "wk-tips") showScreen("tips");
+  else if (btn.id === "wk-open-week") openWeek();
   else if (btn.id === "wk-recomp-week") {
     if (!(await askConfirm("Fill your week with the Recomp Week? This replaces your current weekly schedule. Your presets and logs stay.", "Use Recomp Week"))) return;
     applyRecompWeek();
@@ -381,6 +394,8 @@ screenWorkouts.addEventListener("click", async e => {
 screenWorkouts.addEventListener("input", e => {
   if (!draft) return;
   if (e.target.id === "tpl-name") draft.name = e.target.value;
+  else if (e.target.id === "tpl-homeid") draft.homeId = e.target.value || null;
+  else if (e.target.id === "tpl-gymid") draft.gymId = e.target.value || null;
   else if (e.target.id === "tpl-about") draft.about = e.target.value ? Number(e.target.value) : null;
   else if (e.target.id === "tpl-finisher") {
     const text = e.target.value.trim();

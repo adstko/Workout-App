@@ -31,7 +31,7 @@ function makeExercise(item, setCount) {
 // The big "+" button: start a new workout, or go back to the one in progress
 function startWorkout() {
   if (!data.active) {
-    data.active = { name: "Workout", startedAt: Date.now(), exercises: [] };
+    data.active = { name: "Workout", startedAt: Date.now(), exercises: [], mode: modeFor(todayKey()) === "home" ? "home" : "gym" };
     saveData();
   }
   showScreen("workout");
@@ -98,6 +98,7 @@ async function finishWorkout() {
     name: a.name.trim() || "Workout",
     startedAt: a.startedAt,
     minutes: Math.max(1, Math.round((Date.now() - a.startedAt) / 60000)),
+    mode: a.mode || "gym", // Gym or Home tag
     exercises: finished,
   };
   data.sessions.push(finishedSession);

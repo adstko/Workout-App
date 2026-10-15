@@ -156,7 +156,7 @@ function todaysPresetsHtml() {
       <p class="muted">Rest day. Nothing scheduled. Set your week in the Workouts tab.</p></div>`;
   }
   return list.map(p => `<div class="card">
-      <div class="muted">${title}</div>
+      <div class="muted">${title} <span class="tag day ${p.home || (own === p && modeFor(viewDate()) === "home") ? "ok" : ""}">${p.home || (own === p && modeFor(viewDate()) === "home") ? "Home" : "Gym"}</span></div>
       <h3>${esc(p.name)}</h3>
       <p class="muted">${esc(presetSummary(p))}</p>
       <button class="big primary" data-preset-start="${p.id}">Start</button></div>`).join("");
@@ -170,7 +170,7 @@ function renderToday() {
   const scheduled = scheduleFor(date).preset;
   const ownPreset = w.day === "Rest" && scheduled; // a preset with its own name, like "Recomp Full Body A"
   const title = ownPreset ? scheduled.name : w.day;
-  let html = `<h1>${esc(title)}${PLAN[title] ? " Day" : ""}</h1><p class="muted">${label}</p>${guidedBannerHtml()}${photoReminderHtml()}${todaysPresetsHtml()}${shortOnTimeHtml()}<div id="week"></div>${consistencyHtml(true)}`;
+  let html = `<h1>${esc(title)}${PLAN[title] ? " Day" : ""}</h1><p class="muted">${label}</p>${guidedBannerHtml()}${photoReminderHtml()}${todaysPresetsHtml()}${todaySwitchHtml()}${shortOnTimeHtml()}<div id="week"></div><button class="big" data-open-week="1" style="margin-bottom:12px">Plan my week (Gym / Home)</button>${consistencyHtml(true)}`;
 
   html += `<div class="row days">` + ["Push", "Pull", "Legs", "Cardio", "Home", "Rest"]
     .map(d => `<button data-day="${d}" class="${d === "Home" ? (scheduled && scheduled.home ? "on" : "") : d === w.day && !ownPreset ? "on" : ""}">${d}</button>`).join("") + `</div>`;
@@ -209,11 +209,13 @@ screenToday.addEventListener("click", async e => {
     const anyDone = w.exercises.some(ex => ex.sets.some(s => s.done));
     if (anyDone && !(await askConfirm("Switching days clears today's logged sets. Continue?", "Switch"))) return;
     const chosen = dayBtn.dataset.day;
+    if (data.dateMode) delete data.dateMode[viewDate()]; // picking by hand clears the one-day Gym/Home note
     if (chosen === "Home") { // not at the gym: today becomes a Home day. It counts for your week like a gym day.
       const home = nextHomeWorkout();
       if (!home) return toast("No Home presets yet. Add them in Workouts.");
       data.dayOverrides = data.dayOverrides || {};
       data.dayOverrides[viewDate()] = home.id;
+      data.dateMode = data.dateMode || {}; data.dateMode[viewDate()] = "home";
       data.workouts[viewDate()] = { day: "Rest", exercises: [] }; // the preset card below runs the workout
       saveData();
       toast("Home day: " + home.name);

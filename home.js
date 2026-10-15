@@ -17,6 +17,45 @@ const HOME_PRESETS = [
     steps: ["Goblet squat × 12", "Push-ups × 10", "Dumbbell row × 10 each side", "Lunges × 8 each leg", "Plank × 30 sec", "No rest between exercises"] },
 ];
 
+// The home versions used by the Week planner (Gym <-> Home). Dumbbells and bodyweight only.
+const HOME_WEEK_PRESETS = [
+  { name: "Home Full Body A", short: "HomeFB A", kind: "strength", about: 40, rest: 45, home: true,
+    finisher: { text: "10 min easy walk", type: "Walk", minutes: 10 },
+    exercises: [
+      ["Goblet squat", 4, 8, 10], ["Push-ups", 4, 8, 15], ["Dumbbell row", 3, 8, 10, { note: "Each side." }],
+      ["Dumbbell Romanian deadlift", 3, 8, 10], ["Shoulder press", 3, 8, 10, { note: "Dumbbells." }], ["Plank", 3, null, null, { seconds: 40 }] ] },
+  { name: "Home Full Body B", short: "HomeFB B", kind: "strength", about: 40, rest: 45, home: true,
+    finisher: { text: "10 min easy walk", type: "Walk", minutes: 10 },
+    exercises: [
+      ["Bulgarian split squat", 3, 8, 10, { note: "Each leg." }], ["Dumbbell bench press", 3, 8, 10, { note: "On the floor or a bench." }],
+      ["Dumbbell row", 4, 8, 12, { note: "Each side." }], ["Dumbbell hip thrust", 3, 8, 10], ["Lateral raises", 3, 12, 15, { failureLast: true }], ["Dead bug", 3, 10, 10] ] },
+  { name: "Home Intervals", short: "HomeInt", kind: "intervals", about: 25, home: true, cardioType: "Intervals (8 x 30s hard / 90s easy)",
+    plan: { warmup: 300, rounds: 8, hard: 30, easy: 90, cooldown: 300 },
+    steps: ["5 min easy warm-up (march in place or walk)", "8 rounds: 30 sec hard (fast stairs, high knees or jumping jacks), then 90 sec easy walking", "5 min easy cool-down"] },
+  { name: "Easy Walk + Core", short: "Walk", kind: "cardio", about: 35, home: true, cardioType: "Walk",
+    plan: { minutes: 25, core: ["Plank", "Side plank", "Dead bug"], coreSets: 3 },
+    steps: ["25 min easy walk where you can still talk", "Plank, side plank and dead bug: 3 sets each"] },
+];
+
+function addHomeWeekPresets() {
+  const added = [];
+  HOME_WEEK_PRESETS.forEach(def => {
+    if (data.templates.some(t => t.name === def.name)) return;
+    data.templates.push(homeTemplate(def));
+    added.push(def.name);
+  });
+  if (added.length) saveData();
+  return added;
+}
+
+// Once per phone, like the others
+function offerHomeWeekPresets() {
+  if (data.homeWeekOffered) return;
+  addHomeWeekPresets();
+  data.homeWeekOffered = true;
+  saveData();
+}
+
 function homeTemplate(def) {
   const t = recompTemplate(def); // same shape as the Recomp presets
   t.home = true;

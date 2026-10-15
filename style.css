@@ -324,3 +324,9 @@ label.btn { position: relative; flex: 1; min-width: 70px; display: flex; align-i
 
 /* ---------- Home workouts ---------- */
 .tset.nowt { grid-template-columns: 46px 1fr 54px 54px; }
+
+/* ---------- Week planner ---------- */
+.daycard.picked { border-color: var(--blue); }
+.row.seg button { min-height: 52px; }
+.row.seg button:disabled { opacity: .4; }
+.tag.day.ok { background: var(--green); color: #07210f; }

@@ -2,18 +2,18 @@
 
 const screens = {
   today: screenToday, workouts: screenWorkouts, workout: screenWorkout, picker: screenPicker,
-  exercise: screenExercise, cardio: screenCardio, history: screenHistory, guided: screenGuided, tips: screenTips, photos: screenPhotos,
+  exercise: screenExercise, cardio: screenCardio, history: screenHistory, guided: screenGuided, tips: screenTips, photos: screenPhotos, week: screenWeek,
 };
 const renderers = {
   today: renderToday, workouts: renderWorkouts, workout: renderWorkout, picker: renderPicker,
-  exercise: renderExercise, cardio: renderCardio, history: renderHistory, guided: renderGuided, tips: renderTips, photos: renderPhotos,
+  exercise: renderExercise, cardio: renderCardio, history: renderHistory, guided: renderGuided, tips: renderTips, photos: renderPhotos, week: renderWeekPlan,
 };
 
 function showScreen(name) {
   clearInterval(elapsedId); // the workout clock only runs while its screen is open
   if (name !== "photos") photosLeft(); // photos never stay on the page after you leave the Photos screen
   for (const key in screens) screens[key].hidden = key !== name;
-  const navName = name === "photos" ? "history" : name; // Photos lives under the History tab
+  const navName = name === "photos" ? "history" : name === "week" ? "workouts" : name; // Photos lives under History, Week under Workouts
   document.querySelectorAll("nav button[data-screen]").forEach(b => b.classList.toggle("active", b.dataset.screen === navName));
   document.body.classList.toggle("in-exercise", name === "exercise");
   renderers[name](); // redraw so the screen always shows fresh data
@@ -54,6 +54,7 @@ setInterval(checkNewDay, 60000);
 seedPresets(); // add the starter presets on first launch
 offerRecompPresets(); // add the Recomp presets once
 offerHomePresets(); // add the Quick Home presets once
+offerHomeWeekPresets(); // and the home versions used by the Week planner
 applyWeekendRest(); // one-time: Saturday and Sunday become rest days
 showScreen("today");
 queueOnlineSync(); // signed in? send your latest totals
