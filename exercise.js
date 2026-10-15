@@ -5,6 +5,15 @@ let currentEx = 0;      // which exercise (position in data.active.exercises)
 let menuOpen = false;   // the three-dot menu
 let noteOpen = false;   // the note box
 
+// Rest time for this workout: the preset's own (Home presets use 45 s), otherwise your default
+function currentRest() { return (data.active && data.active.rest) || data.customRest; }
+
+// Push-ups, plank, dead bugs...: log reps or seconds, no weight box (the menu can add one back)
+function noWeight(ex) { return (ex.equipment === "Bodyweight" || TIMED.includes(ex.name)) && !ex.showWeight; }
+
+// The other exercise in this one's Super Set
+function supersetPartner(a, ex) { return ex.superset ? a.exercises.find(o => o !== ex && o.superset === ex.superset) : null; }
+
 function openExercise(i) {
   currentEx = i;
   menuOpen = false;
@@ -46,7 +55,7 @@ function renderExercise() {
       <div class="muted">Rest Timer</div>
       <div class="rest-row">
         <button data-adj="-15">−15</button>
-        <span id="rest-top">${fmtClock(data.customRest)}</span>
+        <span id="rest-top">${fmtClock(currentRest())}</span>
         <button data-adj="15">+15</button>
         <button id="rest-skip">Skip</button>
       </div>
@@ -59,8 +68,10 @@ function renderExercise() {
     </div>`;
 
   if (ex.superset) {
-    const partner = a.exercises.find((o, k) => k !== currentEx && o.superset === ex.superset);
-    if (partner) html += `<p><span class="tag ss">SUPER SET</span> with ${esc(partner.name)}</p>`;
+    const partner = supersetPartner(a, ex);
+    if (partner) html += `<p><span class="tag ss">SUPER SET</span> with ${esc(partner.name)}</p>
+      <p class="muted">Do a set of each, back to back. The rest timer starts after both.</p>
+      <button id="ss-go" data-partner="${a.exercises.indexOf(partner)}">Go to ${esc(partner.name)}</button>`;
   }
 
   const tip = progressTipFor(ex);
@@ -73,17 +84,20 @@ function renderExercise() {
     html += `<div class="menu">
       <button id="m-remove" class="danger">Remove exercise</button>
       <button id="m-swap">Swap exercise</button>
-      <button id="m-note">Add note</button></div>`;
+      <button id="m-note">Add note</button>
+      ${currentEx < a.exercises.length - 1 || ex.superset ? `<button id="m-ss">${ex.superset ? "Remove Super Set" : "Super Set with next exercise"}</button>` : ""}
+      ${ex.equipment === "Bodyweight" && !TIMED.includes(ex.name) ? `<button id="m-weight">${ex.showWeight ? "Hide weight" : "Add weight"}</button>` : ""}</div>`;
   }
   if (noteOpen || ex.note) {
     html += `<textarea id="ex-note" placeholder="Notes (seat height, how it felt...)">${esc(ex.note)}</textarea>`;
   }
 
-  html += `<div class="tset head-row"><div>Set</div><div>${timed ? "" : "Weight (lb)"}</div><div>${timed ? "Seconds" : "Reps"}</div><div>Fail</div><div>✓</div></div>`;
+  const nw = noWeight(ex);
+  html += `<div class="tset head-row ${nw ? "nowt" : ""}"><div>Set</div>${nw ? "" : `<div>${timed ? "" : "Weight (lb)"}</div>`}<div>${timed ? "Seconds" : "Reps"}</div><div>Fail</div><div>✓</div></div>`;
   ex.sets.forEach((s, j) => {
-    html += `<div class="tset ${s.done ? "done" : ""}">
+    html += `<div class="tset ${s.done ? "done" : ""} ${nw ? "nowt" : ""}">
       <div class="set-n">${j + 1}</div>
-      <input type="number" inputmode="decimal" placeholder="lb" aria-label="Weight" value="${esc(s.weight)}" data-set="${j}" data-field="weight">
+      ${nw ? "" : `<input type="number" inputmode="decimal" placeholder="lb" aria-label="Weight" value="${esc(s.weight)}" data-set="${j}" data-field="weight">`}
       <input type="number" inputmode="numeric" placeholder="${timed ? "sec" : "reps"}" aria-label="Reps" value="${esc(s.reps)}"
         class="${repsOutOfRange(ex.name, s.reps) ? "warn" : ""}" data-set="${j}" data-field="reps">
       <button class="failbtn ${s.failure ? "on" : ""}" data-fail="${j}" aria-label="Failure set">FAIL</button>
@@ -115,15 +129,22 @@ screenExercise.addEventListener("click", async e => {
     return;
   }
   if (btn.dataset.adj) {
-    const change = Number(btn.dataset.adj);
-    data.customRest = Math.min(300, Math.max(15, data.customRest + change));
+    const change = Number(btn.dataset.adj), next = Math.min(300, Math.max(15, currentRest() + change));
+    if (a.rest) a.rest = next; else data.customRest = next; // a Home workout changes only its own rest time
     saveData();
     if (timerOn) adjustTimer(change);
-    else document.getElementById("rest-top").textContent = fmtClock(data.customRest);
+    else document.getElementById("rest-top").textContent = fmtClock(currentRest());
   }
   else if (btn.id === "rest-skip") stopTimer();
   else if (btn.id === "ex-back") showScreen("workout");
   else if (btn.id === "ex-menu") { menuOpen = !menuOpen; renderExercise(); }
+  else if (btn.id === "ss-go") openExercise(Number(btn.dataset.partner));
+  else if (btn.id === "m-ss") {
+    if (ex.superset) { const p = supersetPartner(a, ex); ex.superset = null; if (p) p.superset = null; }
+    else { const next = a.exercises[currentEx + 1]; const g = uid(); if (next.superset) { const old = supersetPartner(a, next); if (old) old.superset = null; } ex.superset = next.superset = g; }
+    menuOpen = false; saveData(); renderExercise();
+  }
+  else if (btn.id === "m-weight") { ex.showWeight = !ex.showWeight; menuOpen = false; saveData(); renderExercise(); }
   else if (btn.id === "m-note") { noteOpen = true; menuOpen = false; renderExercise(); document.getElementById("ex-note").focus(); }
   else if (btn.id === "m-remove") {
     if (!(await askConfirm("Remove " + ex.name + " from this workout?", "Remove"))) return;
@@ -164,7 +185,12 @@ screenExercise.addEventListener("click", async e => {
     saveData();
     queueOnlineSync();
     row.classList.toggle("done", s.done);
-    if (s.done) startTimer(data.customRest);
+    if (s.done) {
+      const partner = supersetPartner(a, ex), idx = Number(btn.dataset.check);
+      // In a Super Set the rest starts once the partner's matching set is done too
+      if (!partner || (partner.sets[idx] && partner.sets[idx].done) || !partner.sets[idx]) startTimer(currentRest());
+      else toast("Now do " + partner.name);
+    }
   }
   else if (btn.id === "ex-add") {
     const prev = ex.sets[ex.sets.length - 1];

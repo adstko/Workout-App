@@ -84,7 +84,7 @@ function drawPicker() {
   const q = pick.search.trim().toLowerCase();
   const rows = allExercises().filter(ex =>
     (pick.muscle === "All" || ex.muscle === pick.muscle) &&
-    (pick.equipment === "All" || ex.equipment === pick.equipment) &&
+    (pick.equipment === "All" || ex.equipment === pick.equipment || (pick.equipment === "Home" && HOME_EQUIPMENT.includes(ex.equipment))) &&
     (!q || (ex.name + " " + ex.muscle).toLowerCase().includes(q)));
 
   document.getElementById("pk-list").innerHTML = rows.map(ex => `

@@ -66,7 +66,7 @@ function stopTimer() {
   timerBar.hidden = true;
   const top = document.getElementById("rest-top");
   if (top) {
-    top.textContent = fmtClock(data.customRest); // back to the default length
+    top.textContent = fmtClock(currentRest()); // back to the default length
     document.getElementById("rest-card").classList.remove("finished");
   }
 }

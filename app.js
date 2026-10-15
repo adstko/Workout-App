@@ -53,6 +53,7 @@ setInterval(checkNewDay, 60000);
 
 seedPresets(); // add the starter presets on first launch
 offerRecompPresets(); // add the Recomp presets once
+offerHomePresets(); // add the Quick Home presets once
 applyWeekendRest(); // one-time: Saturday and Sunday become rest days
 showScreen("today");
 queueOnlineSync(); // signed in? send your latest totals

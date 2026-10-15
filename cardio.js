@@ -36,6 +36,8 @@ function renderCardio() {
       • Weekends: golf or a long walk
     </div>
 
+    ${quickWalkHtml()}
+
     <form id="cardio-form" class="card">
       <label>Date</label>
       <select name="date">${dateChoices()}</select>

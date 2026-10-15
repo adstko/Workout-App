@@ -174,6 +174,7 @@ function strengthHtml() {
     const title = rowName ? "Row (" + rowName + ")" : lift.label;
     const { values, labels } = weeklyBest(rowName ? [rowName] : lift.names, 12);
     const have = values.filter(v => v !== null);
+    if (lift.optional && !have.length) return; // home lifts only appear once you have logged them
     if (!have.length) {
       html += `<div class="card"><b>${esc(title)}</b><div class="muted">Log it in a workout and your line starts here.</div></div>`;
       return;

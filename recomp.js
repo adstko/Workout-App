@@ -75,7 +75,7 @@ function applyRecompWeek() {
 // "Circuit · about 30 min · 4 rounds" or "6 exercises · Legs, Chest..."
 function presetSummary(p) {
   const about = p.about ? " · about " + p.about + " min" : "";
-  if (p.kind === "circuit") return "Circuit" + about + " · " + ((p.plan && p.plan.rounds) || 4) + " rounds";
+  if (p.kind === "circuit") { const r = (p.plan && p.plan.rounds) || 4; return "Circuit" + about + " · " + r + (r === 1 ? " round" : " rounds"); }
   if (p.kind === "intervals") return "Intervals" + about;
   if (p.kind === "cardio") return "Cardio + core" + about;
   const muscles = presetMuscles(p).join(", ");

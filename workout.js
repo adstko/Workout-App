@@ -23,6 +23,7 @@ function makeExercise(item, setCount) {
   }
   return { name: item.name, muscle: item.muscle, equipment: item.equipment, note: "", superset: item.superset || null,
            minReps: item.minReps || null, maxReps: item.maxReps || null, // the preset's target rep range
+           showWeight: done.some(s => Number(s.weight) > 0), // a weighted pull-up keeps its weight box
            seconds: item.seconds || null, failureLast: !!item.failureLast, hint: item.note || "",
            sets: sets };
 }

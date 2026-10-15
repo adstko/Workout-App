@@ -4,7 +4,9 @@
 // Names that match the Push/Pull/Legs plan (e.g. "Bench press") share one chart.
 
 const MUSCLES = ["Chest", "Back", "Shoulders", "Arms", "Legs", "Glutes", "Core"];
-const EQUIPMENT = ["Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight", "Other"];
+// "Home" is a filter: it shows everything you can do at home (dumbbell + bodyweight moves, and anything you tag Home)
+const EQUIPMENT = ["Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight", "Home", "Other"];
+const HOME_EQUIPMENT = ["Dumbbell", "Bodyweight", "Home"];
 
 const EXERCISES = [
   // Chest
@@ -59,6 +61,7 @@ const EXERCISES = [
   ["Hack squat", "Legs", "Machine"],
   ["Leg press", "Legs", "Machine"],
   ["Romanian deadlift", "Legs", "Barbell"],
+  ["Dumbbell Romanian deadlift", "Legs", "Dumbbell"],
   ["Leg curl", "Legs", "Machine"],
   ["Leg extension", "Legs", "Machine"],
   ["Lunges", "Legs", "Dumbbell"],

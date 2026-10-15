@@ -185,6 +185,7 @@ async function startPreset(id) {
     startedAt: Date.now(),
     presetId: p.id, // so we can offer to update the preset after you finish
     finisher: p.finisher || null, // e.g. "10 min easy incline walk"
+    rest: p.rest || null,         // rest timer seconds for this preset (Home presets: 45)
     exercises: p.exercises.map(item => makeExercise(item, item.sets)),
   };
   saveData();

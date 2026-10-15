@@ -146,7 +146,8 @@ function circuitHtml() {
   const chips = Array.from({ length: rounds }, (_, i) => `<span class="rchip ${i < guided.round ? "on" : ""}">${i + 1}</span>`).join("");
   return `<div class="card"><div class="muted">Rounds done (${guided.round} of ${rounds})</div><div class="rchips">${chips}</div>
       <button id="g-round-done" class="big primary" style="margin-top:12px">${guided.round + 1 >= rounds ? "Last round done" : "Round " + (guided.round + 1) + " done"}</button>
-      <p class="muted">Rest ${plan.restSeconds || 60} seconds between rounds. The rest timer starts when you tap.</p></div>`;
+      ${plan.repeat ? `<button id="g-repeat" class="big" style="margin-top:10px">Repeat round</button>` : ""}
+      <p class="muted">${plan.repeat ? "No rest between exercises. " : ""}Rest ${plan.restSeconds || 60} seconds between rounds. The rest timer starts when you tap.</p></div>`;
 }
 
 function coreHtml() {
@@ -170,6 +171,7 @@ function finishHtml() {
     : guided.activeMs > 0 ? Math.max(1, Math.round(guided.activeMs / 60000)) : planned;
   const core = coreSummary();
   return `<div class="card stack"><b>${guided.done ? "Nice work. Log it." : "Log it"}</b>
+      ${p.plan && p.plan.repeat ? `<button id="g-repeat" class="big">Repeat round</button>` : ""}
       <div><label for="gf-type">Type</label><select id="gf-type">${CARDIO_TYPES.map(t => `<option ${t === p.cardioType ? "selected" : ""}>${esc(t)}</option>`).join("")}</select></div>
       <div><label for="gf-min">Minutes</label><input id="gf-min" type="number" inputmode="numeric" min="1" max="300" value="${minutes}"></div>
       <div><label for="gf-miles">Miles (optional)</label><input id="gf-miles" type="number" inputmode="decimal" min="0" max="500" step="any" placeholder="e.g. 1.5"></div>
@@ -221,6 +223,13 @@ screenGuided.addEventListener("click", async e => {
     const rounds = (guided.p.plan && guided.p.plan.rounds) || 4;
     if (guided.round >= rounds) { guided.done = true; guided.finishing = true; toast("All rounds done!"); }
     else { startTimer((guided.p.plan && guided.p.plan.restSeconds) || 60); }
+    renderGuided();
+  }
+  else if (t.id === "g-repeat") { // one more round: back to the tracker
+    const plan = guided.p.plan;
+    plan.rounds = Math.min(10, (plan.rounds || 1) + 1);
+    guided.done = false; guided.finishing = false;
+    toast("Round " + plan.rounds + " added");
     renderGuided();
   }
   else if (t.dataset.core) { const arr = guided.core[t.dataset.core]; arr[Number(t.dataset.set)] = !arr[Number(t.dataset.set)]; renderGuided(); }

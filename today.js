@@ -170,10 +170,10 @@ function renderToday() {
   const scheduled = scheduleFor(date).preset;
   const ownPreset = w.day === "Rest" && scheduled; // a preset with its own name, like "Recomp Full Body A"
   const title = ownPreset ? scheduled.name : w.day;
-  let html = `<h1>${esc(title)}${PLAN[title] ? " Day" : ""}</h1><p class="muted">${label}</p>${guidedBannerHtml()}${photoReminderHtml()}${todaysPresetsHtml()}<div id="week"></div>${consistencyHtml(true)}`;
+  let html = `<h1>${esc(title)}${PLAN[title] ? " Day" : ""}</h1><p class="muted">${label}</p>${guidedBannerHtml()}${photoReminderHtml()}${todaysPresetsHtml()}${shortOnTimeHtml()}<div id="week"></div>${consistencyHtml(true)}`;
 
-  html += `<div class="row days">` + ["Push", "Pull", "Legs", "Cardio", "Rest"]
-    .map(d => `<button data-day="${d}" class="${d === w.day && !ownPreset ? "on" : ""}">${d}</button>`).join("") + `</div>`;
+  html += `<div class="row days">` + ["Push", "Pull", "Legs", "Cardio", "Home", "Rest"]
+    .map(d => `<button data-day="${d}" class="${d === "Home" ? (scheduled && scheduled.home ? "on" : "") : d === w.day && !ownPreset ? "on" : ""}">${d}</button>`).join("") + `</div>`;
 
   const note = ownPreset ? "" : dayNote(w.day);
   if (note) html += `<div class="card">${note}</div>`;
@@ -209,6 +209,17 @@ screenToday.addEventListener("click", async e => {
     const anyDone = w.exercises.some(ex => ex.sets.some(s => s.done));
     if (anyDone && !(await askConfirm("Switching days clears today's logged sets. Continue?", "Switch"))) return;
     const chosen = dayBtn.dataset.day;
+    if (chosen === "Home") { // not at the gym: today becomes a Home day. It counts for your week like a gym day.
+      const home = nextHomeWorkout();
+      if (!home) return toast("No Home presets yet. Add them in Workouts.");
+      data.dayOverrides = data.dayOverrides || {};
+      data.dayOverrides[viewDate()] = home.id;
+      data.workouts[viewDate()] = { day: "Rest", exercises: [] }; // the preset card below runs the workout
+      saveData();
+      toast("Home day: " + home.name);
+      renderToday();
+      return;
+    }
     // Only THIS date changes (not every Monday, Tuesday, ...). The week bar and preset card follow it.
     if (viewDate() >= todayKey()) {
       data.dayOverrides = data.dayOverrides || {};
