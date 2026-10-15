@@ -23,11 +23,11 @@ function buildPhases(p) {
   return []; // the circuit has no timer, just rounds
 }
 
-function startGuided(id) {
+function startGuided(id, date) {
   const p = data.templates.find(t => t.id === id);
   clearInterval(guidedId);
   letSleep();
-  guided = { mode: modeForPreset(p), p: JSON.parse(JSON.stringify(p)), startedAt: Date.now(), activeMs: 0, round: 0, core: {}, finishing: false,
+  guided = { date: date || null, mode: modeForPreset(p), p: JSON.parse(JSON.stringify(p)), startedAt: Date.now(), activeMs: 0, round: 0, core: {}, finishing: false,
              phases: buildPhases(p), idx: 0, running: false, end: 0, left: 0, lastStart: 0, done: false };
   if (guided.phases.length) guided.left = guided.phases[0].sec * 1000;
   ((p.plan && p.plan.core) || []).forEach(name => { guided.core[name] = Array((p.plan && p.plan.coreSets) || 3).fill(false); });
@@ -247,7 +247,7 @@ screenGuided.addEventListener("click", async e => {
     const miles = Number(document.getElementById("gf-miles").value);
     const effort = Number(document.getElementById("gf-effort").value);
     data.cardio.push({
-      id: String(Date.now()), date: todayKey(), type: document.getElementById("gf-type").value, minutes: minutes,
+      id: String(Date.now()), date: guided.date || todayKey(), type: document.getElementById("gf-type").value, minutes: minutes,
       miles: miles > 0 ? miles : null, floors: null, climb: null, effort: effort >= 1 ? effort : null,
       presetId: guided.p.id, presetName: guided.p.name, mode: guided.mode || modeForPreset(guided.p), notes: document.getElementById("gf-notes").value.trim(),
     });

@@ -255,7 +255,6 @@ function setDateWorkout(key, preset, mode) {
 
 function todaySwitchHtml() {
   const key = viewDate();
-  if (key < todayKey()) return "";
   const p = scheduleFor(key).preset, mode = modeFor(key), express = homeByShort("Express");
   const to = mode === "home" ? "gym" : "home";
   return `<div class="row" style="margin-top:-6px;margin-bottom:12px">

@@ -94,7 +94,7 @@ async function finishWorkout() {
   const sessionId = uid();
   const finishedSession = {
     id: sessionId,
-    date: dateKey(new Date(a.startedAt)),
+    date: a.date || dateKey(new Date(a.startedAt)),
     name: a.name.trim() || "Workout",
     startedAt: a.startedAt,
     minutes: Math.max(1, Math.round((Date.now() - a.startedAt) / 60000)),

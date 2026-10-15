@@ -178,13 +178,14 @@ function renderWorkouts() {
 
 // Start a preset: the normal workout screen with all its exercises and set rows ready.
 // Weight and reps are pre-filled from the last time you did each exercise (makeExercise).
-async function startPreset(id) {
+async function startPreset(id, date) { // date: log it for an earlier day (leave empty for today)
   const p = data.templates.find(t => t.id === id);
-  if (p.kind && p.kind !== "strength") return startGuided(id); // circuit, intervals, easy cardio + core
+  if (p.kind && p.kind !== "strength") return startGuided(id, date); // circuit, intervals, easy cardio + core
   if (data.active && !(await askConfirm("You already have a workout in progress. Replace it with this preset?", "Replace"))) return;
   data.active = {
     name: p.name,
     startedAt: Date.now(),
+    date: date || null, // an earlier day this workout is being logged for
     presetId: p.id, // so we can offer to update the preset after you finish
     finisher: p.finisher || null, // e.g. "10 min easy incline walk"
     mode: modeForPreset(p),       // tagged Gym or Home in your history

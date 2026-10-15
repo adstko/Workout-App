@@ -167,7 +167,7 @@ function todaysPresetsHtml() {
       <div class="muted">${title} <span class="tag day ${p.home || (own === p && modeFor(viewDate()) === "home") ? "ok" : ""}">${p.home || (own === p && modeFor(viewDate()) === "home") ? "Home" : "Gym"}</span></div>
       <h3>${esc(p.name)}</h3>
       <p class="muted">${esc(presetSummary(p))}</p>
-      <button class="big primary" data-preset-start="${p.id}">Start</button></div>`).join("");
+      <button class="big primary" data-preset-start="${p.id}">${isToday || viewDate() > todayKey() ? "Start" : "Log it for " + day.toLocaleDateString(undefined, { weekday: "long" })}</button></div>`).join("");
 }
 
 function renderToday() {
@@ -206,7 +206,7 @@ screenToday.addEventListener("click", async e => {
   if (shift) { weekShift = Math.min(0, weekShift + Number(shift.dataset.weekshift)); renderToday(); return; }
 
   const presetBtn = e.target.closest("[data-preset-start]");
-  if (presetBtn) return startPreset(presetBtn.dataset.presetStart);
+  if (presetBtn) return startPreset(presetBtn.dataset.presetStart, viewDate() < todayKey() ? viewDate() : null);
 
   if (e.target.closest("[data-open-photos]")) return openPhotos();
   if (e.target.closest("[data-open-progress]")) { historyTab = "stats"; checkinOpen = true; return showScreen("history"); }
@@ -233,7 +233,7 @@ screenToday.addEventListener("click", async e => {
       return;
     }
     // Only THIS date changes (not every Monday, Tuesday, ...). The week bar and preset card follow it.
-    if (viewDate() >= todayKey()) {
+    {
       data.dayOverrides = data.dayOverrides || {};
       const preset = data.templates.find(t => t.name.toLowerCase() === chosen.toLowerCase());
       if (chosen === "Cardio" || chosen === "Rest" || preset) {
